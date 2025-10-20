@@ -1,0 +1,187 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  relationMode = "foreignKeys"
+}
+
+enum UserStatus {
+  active
+  suspended
+}
+
+enum AppRole {
+  ADMIN
+  RENTER
+  USER
+}
+
+enum Sex {
+  male
+  female
+  other
+  undisclosed
+}
+
+enum VehicleStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  BLOCKED
+}
+
+enum VehicleCategory {
+  ECONOMY
+  COMPACT
+  MIDSIZE
+  SUV
+  PICKUP
+  VAN
+  PREMIUM
+  ELECTRIC
+}
+
+enum BodyType {
+  SEDAN
+  HATCHBACK
+  SUV
+  PICKUP
+  VAN
+  COUPE
+  CONVERTIBLE
+}
+
+enum Transmission {
+  MANUAL
+  AUTOMATIC
+}
+
+enum FuelType {
+  GASOLINE
+  DIESEL
+  HYBRID
+  ELECTRIC
+}
+
+enum Drivetrain {
+  FWD
+  RWD
+  AWD
+  WD4
+}
+
+model User {
+  id              String      @id @default(uuid())
+  email           String      @unique @db.VarChar(120)
+  name            String?     @db.VarChar(50)
+  username        String      @db.VarChar(50)
+  auth0Id         String?     @unique
+  password        String?
+  isAdmin         Boolean     @default(false)
+  role            AppRole     @default(USER)
+  isEmailVerified Boolean     @default(false)
+  lastLoginAt     DateTime?   @db.Timestamptz(6)
+
+  sex             Sex         @default(undisclosed)
+  city            String?     @db.VarChar(80)
+  state           String?     @db.VarChar(80)
+  country         String?     @db.VarChar(80)
+  birthDate       DateTime?   @db.Date
+  documentType    String?     @db.VarChar(30)
+  documentNumber  String?     @db.VarChar(60)
+  address         String?     @db.VarChar(120)
+  phone           String?     @db.VarChar(20)
+  profilePicture  String?
+  biography       String?     @db.VarChar(150)
+
+  status          UserStatus  @default(active)
+  pinsCount       Int         @default(0)
+  blockedReason   String?
+
+  pins            Pin[]
+
+  createdAt       DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime    @updatedAt @db.Timestamptz(6)
+  deletedAt       DateTime?   @db.Timestamptz(6)
+
+  @@index([role, status])
+  @@index([city])
+}
+
+model Pin {
+  id                String          @id @default(uuid())
+  title             String          @db.VarChar(120)
+  make              String          @db.VarChar(60)
+  model             String          @db.VarChar(60)
+  year              Int
+  trim              String?         @db.VarChar(60)
+
+  bodyType          BodyType
+  category          VehicleCategory
+  transmission      Transmission
+  fuel              FuelType
+  drivetrain        Drivetrain?
+  color             String?         @db.VarChar(40)
+
+  licensePlate      String?         @db.VarChar(20)
+  vin               String?         @db.VarChar(30)
+
+  city              String          @db.VarChar(80)
+  state             String          @db.VarChar(80)
+  country           String          @db.VarChar(80)
+  lat               Decimal?        @db.Decimal(10, 6)
+  lng               Decimal?        @db.Decimal(10, 6)
+
+  pricePerHour      Decimal         @default(0) @db.Decimal(12, 2)
+  pricePerDay       Decimal         @default(0) @db.Decimal(12, 2)
+  pricePerWeek      Decimal         @default(0) @db.Decimal(12, 2)
+  deposit           Decimal         @default(0) @db.Decimal(12, 2)
+  kmIncludedPerDay  Int             @default(0)
+  pricePerExtraKm   Decimal         @default(0) @db.Decimal(12, 2)
+  minHours          Int             @default(1)
+  minDriverAge      Int             @default(18)
+  insuranceIncluded Boolean         @default(true)
+  rules             String?
+
+  description       String?
+  photos            PinPhoto[]
+
+  status            VehicleStatus   @default(DRAFT)
+  viewsCount        Int             @default(0)
+  favoritesCount    Int             @default(0)
+  bookingsCount     Int             @default(0)
+
+  ownerId           String
+  owner             User            @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+
+  createdAt         DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime        @updatedAt @db.Timestamptz(6)
+  deletedAt         DateTime?       @db.Timestamptz(6)
+
+  @@index([status, city, category])
+  @@index([ownerId, status])
+}
+
+model PinPhoto {
+  id        String   @id @default(uuid())
+  url       String   @db.Text
+  isCover   Boolean  @default(false)
+
+  pinId     String
+  pin       Pin      @relation(fields: [pinId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([pinId])
+}
+
+model File {
+  id       Int     @id @default(autoincrement())
+  fileName String
+  mimeType String
+  url      String
+}

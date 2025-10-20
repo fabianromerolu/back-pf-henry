@@ -1,0 +1,4 @@
+1. INSTALLA DEPENDENCIAS: npm i
+2. Configura las variables de entorno en un archivo .env
+3. genera el cliente de prisma: npx prisma generate
+4. (SUBJETIVO) si vas a hacer modificaciones a la base de datos por ejemplo crear un nuevo modelo u alguna relacion entre modelos (entidades) corre este comando npx prisma migrate dev --name nombre-de-lo-que-se-agrego y luego vuelve y genera el cliente npx prisma generate, y como recomendacion cierra y vuelve abrir Visual Estudio Code despues de este proceso. y por favor si generar un cambio en la base de datos asegura de subir tus cambios a github para que los demas devs estemos actualizados con la ultima version de la db
