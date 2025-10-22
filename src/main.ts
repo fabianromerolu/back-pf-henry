@@ -1,4 +1,4 @@
-// src/main.ts
+//src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import type { ConfigParams } from 'express-openid-connect';
