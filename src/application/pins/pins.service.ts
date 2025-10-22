@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 // src/application/pins/pins.service.ts
 import {
   BadRequestException,
@@ -79,7 +80,10 @@ export class PinsService {
     return pin;
   }
 
-  async listMine(userId: string, query?: ListQuery): Promise<PinWithOwnerPhotos[]> {
+  async listMine(
+    userId: string,
+    query?: ListQuery,
+  ): Promise<PinWithOwnerPhotos[]> {
     const page = Math.max(1, Number(query?.page ?? 1));
     const limit = Math.max(1, Math.min(50, Number(query?.limit ?? 20)));
 
@@ -95,11 +99,16 @@ export class PinsService {
     });
   }
 
-  async createPin(ownerId: string, dto: CreatePinDto): Promise<PinWithOwnerPhotos> {
+  async createPin(
+    ownerId: string,
+    dto: CreatePinDto,
+  ): Promise<PinWithOwnerPhotos> {
     const owner = await this.prisma.user.findUnique({ where: { id: ownerId } });
     if (!owner) throw new NotFoundException('Owner not found');
     if (owner.role !== AppRole.RENTER && owner.role !== AppRole.ADMIN) {
-      throw new ForbiddenException('Only renters or admins can create vehicles');
+      throw new ForbiddenException(
+        'Only renters or admins can create vehicles',
+      );
     }
 
     return this.prisma.pin.create({
@@ -108,7 +117,12 @@ export class PinsService {
         ownerId,
         status: VehicleStatus.DRAFT,
         photos: dto.photos?.length
-          ? { create: dto.photos.map((p) => ({ url: p.url, isCover: !!p.isCover })) }
+          ? {
+              create: dto.photos.map((p) => ({
+                url: p.url,
+                isCover: !!p.isCover,
+              })),
+            }
           : undefined,
       },
       include: {
@@ -126,7 +140,9 @@ export class PinsService {
     const pin = await this.prisma.pin.findUnique({ where: { id: pinId } });
     if (!pin) throw new NotFoundException('Pin not found');
 
-    const requester = await this.prisma.user.findUnique({ where: { id: requesterId } });
+    const requester = await this.prisma.user.findUnique({
+      where: { id: requesterId },
+    });
     if (!requester) throw new NotFoundException('User not found');
     if (requester.role !== AppRole.ADMIN && pin.ownerId !== requester.id) {
       throw new ForbiddenException('Not allowed to modify this pin');
@@ -142,7 +158,14 @@ export class PinsService {
         data: {
           ...dto,
           photos: dto.photos
-            ? { createMany: { data: dto.photos.map((p) => ({ url: p.url, isCover: !!p.isCover })) } }
+            ? {
+                createMany: {
+                  data: dto.photos.map((p) => ({
+                    url: p.url,
+                    isCover: !!p.isCover,
+                  })),
+                },
+              }
             : undefined,
         },
         include: {
@@ -193,7 +216,9 @@ export class PinsService {
     const pin = await this.prisma.pin.findUnique({ where: { id: pinId } });
     if (!pin) throw new NotFoundException('Pin not found');
 
-    const requester = await this.prisma.user.findUnique({ where: { id: requesterId } });
+    const requester = await this.prisma.user.findUnique({
+      where: { id: requesterId },
+    });
     if (!requester) throw new NotFoundException('User not found');
     if (requester.role !== AppRole.ADMIN && pin.ownerId !== requester.id) {
       throw new ForbiddenException('Not allowed to delete this pin');
@@ -209,7 +234,11 @@ export class PinsService {
   }
 
   // Compat con UsersController
-  async getPinsByUserService(userId: string, page = 1, limit = 20): Promise<PinWithOwnerPhotos[]> {
+  async getPinsByUserService(
+    userId: string,
+    page = 1,
+    limit = 20,
+  ): Promise<PinWithOwnerPhotos[]> {
     return this.listMine(userId, { page, limit });
   }
 

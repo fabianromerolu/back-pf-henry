@@ -112,7 +112,7 @@ model User {
   @@index([city])
 }
 
-model Pin {
+model Vehicle {
   id                String          @id @default(uuid())
   title             String          @db.VarChar(120)
   make              String          @db.VarChar(60)
@@ -127,43 +127,31 @@ model Pin {
   drivetrain        Drivetrain?
   color             String?         @db.VarChar(40)
 
-  licensePlate      String?         @db.VarChar(20)
-  vin               String?         @db.VarChar(30)
+  licensePlate    String?         @unique @db.VarChar(20)
+  vin             String?         @unique @db.VarChar(30)
 
-  city              String          @db.VarChar(80)
-  state             String          @db.VarChar(80)
-  country           String          @db.VarChar(80)
-  lat               Decimal?        @db.Decimal(10, 6)
-  lng               Decimal?        @db.Decimal(10, 6)
-
-  pricePerHour      Decimal         @default(0) @db.Decimal(12, 2)
-  pricePerDay       Decimal         @default(0) @db.Decimal(12, 2)
-  pricePerWeek      Decimal         @default(0) @db.Decimal(12, 2)
-  deposit           Decimal         @default(0) @db.Decimal(12, 2)
-  kmIncludedPerDay  Int             @default(0)
-  pricePerExtraKm   Decimal         @default(0) @db.Decimal(12, 2)
-  minHours          Int             @default(1)
-  minDriverAge      Int             @default(18)
-  insuranceIncluded Boolean         @default(true)
-  rules             String?
-
-  description       String?
-  photos            PinPhoto[]
+  description       String?         @db.Text
 
   status            VehicleStatus   @default(DRAFT)
-  viewsCount        Int             @default(0)
-  favoritesCount    Int             @default(0)
-  bookingsCount     Int             @default(0)
 
   ownerId           String
   owner             User            @relation(fields: [ownerId], references: [id], onDelete: Restrict)
 
-  createdAt         DateTime        @default(now()) @db.Timestamptz(6)
-  updatedAt         DateTime        @updatedAt @db.Timestamptz(6)
-  deletedAt         DateTime?       @db.Timestamptz(6)
+  tariffId        String?
+  tariff          Tariff?         @relation(fields: [tariffId], references: [id], onDelete: SetNull)
 
-  @@index([status, city, category])
-  @@index([ownerId, status])
+  locationId      String?
+  location        Location?       @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  deletedAt       DateTime?       @map("deleted_at")
+
+  bookings        Booking[]
+  favorites       Favorite[]
+
+  @@index([status, category])
+  @@index([ownerId])
 }
 
 model PinPhoto {
