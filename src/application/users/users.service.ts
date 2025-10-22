@@ -3,6 +3,7 @@ import { PrismaService } from 'src/infra/prisma/prisma.service';
 import { AppRole, Sex, User, UserStatus } from '@prisma/client';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
+import * as nodemailer from 'nodemailer'; // 🆕 agregado
 
 type ListUsersFilters = {
   page?: number;
@@ -67,12 +68,24 @@ export class UsersService {
 
   async createUser(dto: any): Promise<User> {
     const { confirmPassword, ...rest } = dto ?? {};
-    return this.prisma.user.create({
+    const created = await this.prisma.user.create({
       data: {
         ...rest,
         email: this.normalizeEmail(rest.email)!,
       },
     });
+
+    // 🆕 Envío de correo de bienvenida: no debe romper la creación si falla
+    try {
+      await this.sendWelcomeEmail(created.email, created.name ?? created.username ?? created.email);
+    } catch (e) {
+      // Conservador: loggear el error pero no abortar el flujo.
+      // Si quieres, reemplaza console.error por un logger central.
+      // eslint-disable-next-line no-console
+      console.warn('[UsersService] sendWelcomeEmail failed:', (e as any)?.message ?? e);
+    }
+
+    return created;
   }
 
   async updateUser(id: string, patch: Partial<UpdateUserDto>): Promise<User> {
@@ -118,11 +131,40 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { auth0Id } });
   }
 
-  async findByEmail(email: string, opts?: { withPassword?: boolean }): Promise<User | null> {
-    const normalized = this.normalizeEmail(email)!;
-    // Prisma no oculta fields por select:false como TypeORM; decide aquí si seleccionas todo.
+// 🆕 Modificado: soporta opts.withPassword para devolver password sólo cuando se solicita
+async findByEmail(email: string, opts: { withPassword: true }): Promise<User | null>;
+async findByEmail(email: string, opts?: { withPassword?: false }): Promise<Omit<User, 'password'> | null>;
+async findByEmail(email: string, opts?: { withPassword?: boolean }): Promise<any> {
+  const normalized = this.normalizeEmail(email);
+  if (!normalized) return null;
+
+  if (opts?.withPassword) {
+    // Devuelve registro completo (incluye password). Usar sólo internamente para login.
     return this.prisma.user.findUnique({ where: { email: normalized } });
   }
+
+  // Por defecto devolvemos sólo campos no sensibles
+  return this.prisma.user.findUnique({
+    where: { email: normalized },
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      name: true,
+      role: true,
+      status: true,
+      profilePicture: true,
+      city: true,
+      state: true,
+      country: true,
+      pinsCount: true,
+      lastLoginAt: true,
+      createdAt: true,
+      updatedAt: true,
+      auth0Id: true,
+    },
+  });
+}
 
   async markLastLogin(userId: string): Promise<void> {
     await this.prisma.user.update({
@@ -136,6 +178,42 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id },
       data: { profilePicture: url },
+    });
+  }
+
+  // 🆕 Nueva función: envía correo de bienvenida usando nodemailer
+  private async sendWelcomeEmail(email?: string | null, name?: string | null) {
+    if (!email) return;
+    const from = process.env.MAIL_USER;
+    const pass = process.env.MAIL_PASS;
+    if (!from || !pass) {
+      // En entornos sin email configurado no lanzamos error (comportamiento conservador)
+      // eslint-disable-next-line no-console
+      console.warn('[UsersService] MAIL_USER or MAIL_PASS not configured, skipping welcome email');
+      return;
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail', // conservador y simple; para prod usar provider dedicado (SendGrid, SES, Mailgun)
+      auth: {
+        user: from,
+        pass,
+      },
+    });
+
+    const displayName = name ?? 'usuario';
+
+    await transporter.sendMail({
+      from: `"Volantia" <${from}>`,
+      to: email,
+      subject: '¡Bienvenido a Volantia!',
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #111">
+          <h2>¡Hola ${displayName}!</h2>
+          <p>Gracias por unirte a <strong>Volantia</strong>. Ya podés ingresar y disfrutar de nuestros servicios.</p>
+          <p>Atentamente,<br/>El equipo de Volantia</p>
+        </div>
+      `,
     });
   }
 }
