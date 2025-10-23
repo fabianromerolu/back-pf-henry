@@ -75,7 +75,7 @@ export class UsersService {
       },
     });
 
-    // 🆕 Envío de correo de bienvenida: no debe romper la creación si falla
+    //  Envío de correo de bienvenida: no debe romper la creación si falla
     try {
       await this.sendWelcomeEmail(created.email, created.name ?? created.username ?? created.email);
     } catch (e) {
@@ -131,7 +131,7 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { auth0Id } });
   }
 
-// 🆕 Modificado: soporta opts.withPassword para devolver password sólo cuando se solicita
+//  Modificado: soporta opts.withPassword para devolver password sólo cuando se solicita
 async findByEmail(email: string, opts: { withPassword: true }): Promise<User | null>;
 async findByEmail(email: string, opts?: { withPassword?: false }): Promise<Omit<User, 'password'> | null>;
 async findByEmail(email: string, opts?: { withPassword?: boolean }): Promise<any> {

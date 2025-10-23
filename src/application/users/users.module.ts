@@ -7,6 +7,7 @@ import { MailerModule } from '../mailer/mailer.module';
 
 @Module({
   imports: [
+    
     MailerModule,
     PinModule,
     FilesModule,

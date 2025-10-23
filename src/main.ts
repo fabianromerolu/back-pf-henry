@@ -9,7 +9,7 @@ import * as cookieParser from 'cookie-parser';
 import { AuthService } from './application/auth/auth.service';
 import { config as oidcConfig } from './application/auth/config/auth0.config';
 
-// 👈 NUEVO: forzar carga del .env
+// 👈NUEVO: forzar carga del .env
 import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env' });
 
