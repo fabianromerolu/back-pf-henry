@@ -9,6 +9,11 @@ import * as cookieParser from 'cookie-parser';
 import { AuthService } from './application/auth/auth.service';
 import { config as oidcConfig } from './application/auth/config/auth0.config';
 
+// 👈NUEVO: forzar carga del .env
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '.env' });
+
+
 function frontBase(): string {
   return (
     process.env.FRONTEND_URL ||
@@ -175,4 +180,3 @@ async function bootstrap() {
   Logger.log(`📚 Swagger: http://${hostLog}:${port}/${docsPath}`);
 }
 
-bootstrap();
