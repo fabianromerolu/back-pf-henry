@@ -1,9 +1,9 @@
+/* eslint-disable prettier/prettier */
+// src/application/pins/dtos/update-pin.dto.ts
 import { PartialType } from '@nestjs/mapped-types';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
 import { CreatePinDto } from './create-pin.dto';
-import { BodyType, Drivetrain, FuelType, Transmission, VehicleCategory } from '@prisma/client';
-
 
 class PhotoUpdateDto {
   @ApiPropertyOptional({ example: 'https://res.cloudinary.com/.../img.jpg' })
@@ -18,6 +18,7 @@ class PhotoUpdateDto {
 
 export class UpdatePinDto extends PartialType(CreatePinDto) {
   @ApiPropertyOptional({ type: [PhotoUpdateDto] })
-  @IsArray() @IsOptional()
+  @IsArray()
+  @IsOptional()
   photos?: PhotoUpdateDto[];
 }

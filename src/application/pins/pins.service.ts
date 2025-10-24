@@ -94,15 +94,22 @@ export class PinsService {
       },
     });
   }
+<<<<<<< HEAD
 
   async createPin(ownerId: string, dto: CreatePinDto): Promise<PinWithOwnerPhotos> {
+=======
+  async createPin(
+    ownerId: string,
+    dto: CreatePinDto,
+  ): Promise<PinWithOwnerPhotos> {
+>>>>>>> b6f19d1 (fix: ajustes en DTOs y tipado de PinsService)
     const owner = await this.prisma.user.findUnique({ where: { id: ownerId } });
     if (!owner) throw new NotFoundException('Owner not found');
     if (owner.role !== AppRole.RENTER && owner.role !== AppRole.ADMIN) {
       throw new ForbiddenException('Only renters or admins can create vehicles');
     }
 
-    return this.prisma.pin.create({
+    const created = await this.prisma.pin.create({
       data: {
         ...dto,
         ownerId,
@@ -116,6 +123,13 @@ export class PinsService {
         owner: { select: ownerSelect },
       },
     });
+
+    await this.prisma.user.update({
+      where: { id: ownerId },
+      data: { pinsCount: { increment: 1 } },
+    });
+
+    return created;
   }
 
   async updatePin(
@@ -123,34 +137,65 @@ export class PinsService {
     pinId: string,
     dto: UpdatePinDto,
   ): Promise<PinWithOwnerPhotos> {
-    const pin = await this.prisma.pin.findUnique({ where: { id: pinId } });
+    const pin = await this.prisma.pin.findUnique({
+      where: { id: pinId },
+      include: {
+        photos: true,
+        owner: { select: ownerSelect },
+      },
+    });
     if (!pin) throw new NotFoundException('Pin not found');
 
+<<<<<<< HEAD
     const requester = await this.prisma.user.findUnique({ where: { id: requesterId } });
+=======
+    const requester: User | null = await this.prisma.user.findUnique({
+      where: { id: requesterId },
+    });
+
+>>>>>>> b6f19d1 (fix: ajustes en DTOs y tipado de PinsService)
     if (!requester) throw new NotFoundException('User not found');
     if (requester.role !== AppRole.ADMIN && pin.ownerId !== requester.id) {
       throw new ForbiddenException('Not allowed to modify this pin');
     }
 
-    // Reemplazo completo de fotos si vienen en el DTO
+    const cleanData: Prisma.PinUpdateInput = Object.fromEntries(
+      Object.entries(dto).filter(([_, v]) => v !== undefined),
+    );
+
     return this.prisma.$transaction(async (tx) => {
-      if (dto.photos) {
+      if (cleanData.photos) {
+        const photos = cleanData.photos as { url: string; isCover?: boolean }[];
+
         await tx.pinPhoto.deleteMany({ where: { pinId } });
+
+        cleanData.photos = {
+          createMany: {
+            data: photos.map((p) => ({
+              url: p.url,
+              isCover: !!p.isCover,
+            })),
+          },
+        };
       }
-      const updated = await tx.pin.update({
+
+      return tx.pin.update({
         where: { id: pinId },
+<<<<<<< HEAD
         data: {
           ...dto,
           photos: dto.photos
             ? { createMany: { data: dto.photos.map((p) => ({ url: p.url, isCover: !!p.isCover })) } }
             : undefined,
         },
+=======
+        data: cleanData,
+>>>>>>> b6f19d1 (fix: ajustes en DTOs y tipado de PinsService)
         include: {
           photos: true,
           owner: { select: ownerSelect },
         },
       });
-      return updated;
     });
   }
 
@@ -162,19 +207,23 @@ export class PinsService {
     const { status } = body || {};
     if (!status) throw new BadRequestException('Missing status');
 
-    const [pin, requester] = await Promise.all([
-      this.prisma.pin.findUnique({ where: { id: pinId } }),
-      this.prisma.user.findUnique({ where: { id: requesterId } }),
-    ]);
+    const pin = await this.prisma.pin.findUnique({
+      where: { id: pinId },
+    });
     if (!pin) throw new NotFoundException('Pin not found');
+
+    const requester = await this.prisma.user.findUnique({
+      where: { id: requesterId },
+    });
     if (!requester) throw new NotFoundException('User not found');
 
-    const isOwner = pin.ownerId === requester.id;
+    const isOwner = requester.id === pin.ownerId;
     const isAdmin = requester.role === AppRole.ADMIN;
 
     if (status === VehicleStatus.BLOCKED && !isAdmin) {
       throw new ForbiddenException('Only admin can block a vehicle');
     }
+
     if (!isOwner && !isAdmin) {
       throw new ForbiddenException('Not allowed to change status');
     }
@@ -218,7 +267,7 @@ export class PinsService {
   }
 
   // Búsqueda legacy (pública)
-  async serviceSearch(q: string): Promise<PinWithOwnerPhotos[]> {
+  async serviceSearch(q: string): PinWithOwnerPhotos[] {
     return this.prisma.pin.findMany({
       where: {
         OR: [
@@ -236,4 +285,3 @@ export class PinsService {
       orderBy: { createdAt: 'desc' },
     });
   }
-}

@@ -1,4 +1,6 @@
-// src/application/pins/dtos/pin-response.dto.ts
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose, Transform, Type } from 'class-transformer';
 
@@ -12,7 +14,8 @@ class OwnerLiteDto {
   @ApiProperty() @Expose() username: string;
   @ApiPropertyOptional() @Expose() name?: string | null;
   @ApiProperty({ enum: ['ADMIN', 'RENTER', 'USER'] })
-  @Expose() role: 'ADMIN' | 'RENTER' | 'USER';
+  @Expose()
+  role: 'ADMIN' | 'RENTER' | 'USER';
   @ApiPropertyOptional() @Expose() profilePicture?: string | null;
   @ApiPropertyOptional() @Expose() city?: string | null;
   @ApiPropertyOptional() @Expose() state?: string | null;
@@ -31,20 +34,46 @@ export class PinResponseDto {
   @ApiPropertyOptional() @Expose() trim?: string | null;
 
   /* Especificaciones */
-  @ApiProperty({ enum: ['SEDAN','HATCHBACK','SUV','PICKUP','VAN','COUPE','CONVERTIBLE'] })
-  @Expose() bodyType: string;
+  @ApiProperty({
+    enum: [
+      'SEDAN',
+      'HATCHBACK',
+      'SUV',
+      'PICKUP',
+      'VAN',
+      'COUPE',
+      'CONVERTIBLE',
+    ],
+  })
+  @Expose()
+  bodyType: string;
 
-  @ApiProperty({ enum: ['ECONOMY','COMPACT','MIDSIZE','SUV','PICKUP','VAN','PREMIUM','ELECTRIC'] })
-  @Expose() category: string;
+  @ApiProperty({
+    enum: [
+      'ECONOMY',
+      'COMPACT',
+      'MIDSIZE',
+      'SUV',
+      'PICKUP',
+      'VAN',
+      'PREMIUM',
+      'ELECTRIC',
+    ],
+  })
+  @Expose()
+  category: string;
 
-  @ApiProperty({ enum: ['MANUAL','AUTOMATIC'] })
-  @Expose() transmission: string;
+  @ApiProperty({ enum: ['MANUAL', 'AUTOMATIC'] })
+  @Expose()
+  transmission: string;
 
-  @ApiProperty({ enum: ['GASOLINE','DIESEL','HYBRID','ELECTRIC'] })
-  @Expose() fuel: string;
+  @ApiProperty({ enum: ['GASOLINE', 'DIESEL', 'HYBRID', 'ELECTRIC'] })
+  @Expose()
+  fuel: string;
 
-  @ApiPropertyOptional({ enum: ['FWD','RWD','AWD','WD4'] })
-  @Expose() drivetrain?: string | null;
+  @ApiPropertyOptional({ enum: ['FWD', 'RWD', 'AWD', 'WD4'] })
+  @Expose()
+  drivetrain?: string | null;
 
   @ApiPropertyOptional() @Expose() color?: string | null;
 
@@ -64,26 +93,48 @@ export class PinResponseDto {
   lng?: number | null;
 
   /* Precios / políticas (decimals como string) */
-  @ApiProperty() @Expose()
-  @Transform(({ value }) => value?.toString?.() ?? value)
+  @ApiProperty()
+  @Expose()
+  @Transform(
+    ({ value }: { value: { toString(): string } | null }) =>
+      value?.toString() ?? null,
+  )
   pricePerHour: string;
 
-  @ApiProperty() @Expose()
-  @Transform(({ value }) => value?.toString?.() ?? value)
+  @ApiProperty()
+  @Expose()
+  @Transform(
+    ({ value }: { value: { toString(): string } | null }) =>
+      value?.toString() ?? null,
+  )
   pricePerDay: string;
 
-  @ApiProperty() @Expose()
-  @Transform(({ value }) => value?.toString?.() ?? value)
+  @ApiProperty()
+  @Expose()
+  @Transform(
+    ({ value }: { value: { toString(): string } | null }) =>
+      value?.toString() ?? null,
+  )
   pricePerWeek: string;
 
-  @ApiProperty() @Expose()
-  @Transform(({ value }) => value?.toString?.() ?? value)
+  @ApiProperty()
+  @Expose()
+  @Transform(
+    ({ value }: { value: { toString(): string } | null }) =>
+      value?.toString() ?? null,
+  )
   deposit: string;
 
-  @ApiProperty() @Expose() kmIncludedPerDay: number;
+  @ApiProperty()
+  @Expose()
+  kmIncludedPerDay: number;
 
-  @ApiProperty() @Expose()
-  @Transform(({ value }) => value?.toString?.() ?? value)
+  @ApiProperty()
+  @Expose()
+  @Transform(
+    ({ value }: { value: { toString(): string } | null }) =>
+      value?.toString() ?? null,
+  )
   pricePerExtraKm: string;
 
   @ApiProperty() @Expose() minHours: number;
@@ -96,21 +147,25 @@ export class PinResponseDto {
   @ApiPropertyOptional() @Expose() description?: string | null;
 
   @ApiPropertyOptional({ type: [PinPhotoDto] })
-  @Expose() @Type(() => PinPhotoDto)
+  @Expose()
+  @Type(() => PinPhotoDto)
   photos?: PinPhotoDto[];
 
   // Campo derivado útil para la UI: URL de portada si existe
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ type: String })
   @Expose()
-  @Transform(({ obj }) => {
-    const cover = Array.isArray(obj?.photos) ? obj.photos.find((p: any) => p.isCover) : null;
+  @Transform(({ obj }: { obj: PinResponseDto }) => {
+    const cover = Array.isArray(obj.photos)
+      ? obj.photos.find((p: PinPhotoDto) => p.isCover)
+      : null;
     return cover?.url ?? null;
   })
   coverPhotoUrl?: string | null;
 
   /* Estado y métricas */
-  @ApiProperty({ enum: ['DRAFT','PUBLISHED','PAUSED','BLOCKED'] })
-  @Expose() status: string;
+  @ApiProperty({ enum: ['DRAFT', 'PUBLISHED', 'PAUSED', 'BLOCKED'] })
+  @Expose()
+  status: string;
 
   @ApiProperty() @Expose() viewsCount: number;
   @ApiProperty() @Expose() favoritesCount: number;
@@ -120,17 +175,22 @@ export class PinResponseDto {
   @ApiProperty() @Expose() ownerId: string;
 
   @ApiPropertyOptional({ type: OwnerLiteDto })
-  @Expose() @Type(() => OwnerLiteDto)
+  @Expose()
+  @Type(() => OwnerLiteDto)
   owner?: OwnerLiteDto;
 
   /* Auditoría */
   @ApiProperty({ type: String })
   @Expose()
-  @Transform(({ value }) => (value instanceof Date ? value.toISOString() : value))
+  @Transform(({ value }) =>
+    value instanceof Date ? value.toISOString() : value,
+  )
   createdAt: string;
 
   @ApiProperty({ type: String })
   @Expose()
-  @Transform(({ value }) => (value instanceof Date ? value.toISOString() : value))
+  @Transform(({ value }) =>
+    value instanceof Date ? value.toISOString() : value,
+  )
   updatedAt: string;
 }
