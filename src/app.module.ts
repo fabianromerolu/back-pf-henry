@@ -7,6 +7,7 @@ import { PinModule } from './application/pins/pins.module';
 import { FilesModule } from './application/files/files.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { MailerModule } from './application/mailer/mailer.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AppService } from './app.service';
     UsersModule,
     PinModule,
     FilesModule,
+    MailerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

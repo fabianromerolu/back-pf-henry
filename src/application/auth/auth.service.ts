@@ -1,8 +1,10 @@
+// src/application/auth/auth.service.ts
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import axios from 'axios';
 import * as bcrypt from 'bcryptjs';
+import { MailerService } from '../mailer/mailer.service';
 
 type AppRole = 'ADMIN' | 'RENTER' | 'USER';
 
@@ -27,7 +29,26 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly mailer: MailerService, // 👈 AÑADIDO
   ) {}
+
+  /* ===== helpers de correo para no romper el flujo si falla SMTP ===== */
+  private async safeSendWelcome(email?: string | null, name?: string | null) {
+    if (!email) return;
+    try {
+      await this.mailer.sendWelcomeEmail(email, name ?? '');
+    } catch (e: any) {
+      console.error('[AuthService] sendWelcomeEmail failed:', e?.message || e);
+    }
+  }
+  private async safeSendLogin(email?: string | null, name?: string | null) {
+    if (!email) return;
+    try {
+      await this.mailer.sendLoginEmail(email, name ?? '');
+    } catch (e: any) {
+      console.error('[AuthService] sendLoginEmail failed:', e?.message || e);
+    }
+  }
 
   /** ADMIN por dominio exacto (env: ADMIN_DOMAINS=midominio.com,otra.co) */
   private isAdminEmail(email?: string | null): boolean {
@@ -71,24 +92,24 @@ export class AuthService {
     }
   }
 
-  /** Sanitiza role en registro local: ADMIN solo por dominio; RENTER/USER aceptados; default USER */
   private sanitizeRoleForRegistration(requested?: string | null, email?: string | null): AppRole {
     if (this.isAdminEmail(email)) return 'ADMIN';
     if (requested === 'RENTER') return 'RENTER';
     return 'USER';
   }
 
-  /** Crea/actualiza usuario desde SSO (Auth0), default role=USER salvo dominio admin */
+  /** Crea/actualiza usuario desde SSO (Auth0). 
+   *  ⚠️ No enviamos correos aquí para no spamear en endpoints tipo /auth/me.
+   *  Para SSO, dispara correos tras el callback real de login (ver helper más abajo).
+   */
   async validateUser(payload: any) {
     const sub = payload.sub;
     const email = payload.email || null;
     const name = payload.name || (email ? email.split('@')[0] : 'user');
 
-    // 1) Buscar por auth0Id
     let user = await this.usersService.findByAuth0Id(sub);
 
     if (!user) {
-      // 2) Enlazar por email si existe
       if (email) {
         const byEmail = await this.usersService.findByEmail(email);
         if (byEmail && !byEmail.auth0Id) {
@@ -96,13 +117,12 @@ export class AuthService {
           if (this.isAdminEmail(email)) {
             patch.role = 'ADMIN';
           } else if (!byEmail.role) {
-            patch.role = 'USER'; // default para SSO
+            patch.role = 'USER';
           }
           await this.usersService.updateUser(byEmail.id, patch as any);
           return this.usersService.findOne(byEmail.id);
         }
       }
-      // 3) Crear nuevo (ADMIN por dominio; si no, USER)
       const role: AppRole = this.isAdminEmail(email) ? 'ADMIN' : 'USER';
       user = await this.usersService.createUser({
         username: name,
@@ -117,7 +137,6 @@ export class AuthService {
       user = await this.usersService.findOne(user.id);
     }
 
-    // Backfill por si faltara role
     if (!user.role) {
       await this.usersService.updateUser(user.id, { role: 'USER' } as any);
       user = await this.usersService.findOne(user.id);
@@ -139,7 +158,7 @@ export class AuthService {
     if (exists) throw new BadRequestException('Email already exists');
 
     const hashed = await bcrypt.hash(password, 10);
-    const role = this.sanitizeRoleForRegistration(requestedRole, email); // ADMIN por dominio, si no RENTER/USER válido
+    const role = this.sanitizeRoleForRegistration(requestedRole, email);
 
     const user = await this.usersService.createUser({
       email,
@@ -149,6 +168,9 @@ export class AuthService {
       password: hashed,
       role,
     } as any);
+
+    // 👇 Enviar bienvenida (no bloquea el flujo si falla)
+    this.safeSendWelcome(user.email, user.name ?? user.username ?? undefined);
 
     const token = await this.generateToken({
       sub: user.id,
@@ -172,11 +194,13 @@ export class AuthService {
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) throw new UnauthorizedException('Invalid credentials');
 
-    // Elevar a ADMIN por dominio si corresponde
     if (this.isAdminEmail(email) && user.role !== 'ADMIN') {
       await this.usersService.updateUser(user.id, { role: 'ADMIN' } as any);
     }
     const fresh = await this.usersService.findOne(user.id);
+
+    // 👇 Email de “login”
+    this.safeSendLogin(fresh.email, fresh.name ?? fresh.username ?? undefined);
 
     const token = await this.generateToken({
       sub: fresh.id,
@@ -188,7 +212,20 @@ export class AuthService {
     return { accessToken: token, user: { id: fresh.id, email: fresh.email, role: fresh.role } };
   }
 
-  /** Opcionales: refresh/revoke si usas Auth0 para eso */
+  /* ======= Opcional: úsalo en tu callback SSO (Auth0) =======
+   * Ejemplo (pseudocódigo):
+   *   const user = await authService.validateUser(req.oidc.user);
+   *   if (isNewUser) await authService.sendWelcomeForSso(user);
+   *   else await authService.sendLoginForSso(user);
+   */
+  async sendWelcomeForSso(user: { email?: string | null; name?: string | null; username?: string | null }) {
+    await this.safeSendWelcome(user.email, user.name ?? user.username ?? undefined);
+  }
+  async sendLoginForSso(user: { email?: string | null; name?: string | null; username?: string | null }) {
+    await this.safeSendLogin(user.email, user.name ?? user.username ?? undefined);
+  }
+
+  /** Opcionales: refresh/revoke */
   async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
     try {
       const res = await axios.post(`${process.env.AUTH0_BASE_URL}/oauth/token`, {

@@ -1,3 +1,4 @@
+// src/application/auth/auth.module.ts
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
@@ -7,12 +8,13 @@ import { AuthController } from './auth.controller';
 import { AnyJwtGuard } from './guards/any-jwt.guard';
 import { LocalJwtStrategy } from 'src/application/auth/types/local-jwt.strategy';
 import { JwtStrategy } from './types/jwt.strategy';
-import { Roles } from './types/roles.decorator'; 
 import { RolesGuard } from './guards/roles.guard';
+import { MailerModule } from '../mailer/mailer.module';
 
 @Module({
   imports: [
     UsersModule,
+    MailerModule, // 👈 AÑADIDO
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       useFactory: () => ({
@@ -22,7 +24,7 @@ import { RolesGuard } from './guards/roles.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, LocalJwtStrategy, AnyJwtGuard, RolesGuard], 
-  exports: [AuthService, AnyJwtGuard, RolesGuard],                                   
+  providers: [AuthService, JwtStrategy, LocalJwtStrategy, AnyJwtGuard, RolesGuard],
+  exports: [AuthService, AnyJwtGuard, RolesGuard],
 })
 export class AuthModule {}
