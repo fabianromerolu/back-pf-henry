@@ -102,9 +102,15 @@ async function bootstrap() {
         return session;
       }
 
-      // Upsert/role en tu base
-      const user = await authService.validateUser({ sub, email, name });
-      const role: AppRole = (user.role as AppRole) ?? (user.isAdmin ? 'ADMIN' : 'USER');
+    const { user, created } = await authService.validateUser({ sub, email, name });
+    const role: AppRole = (user.role as AppRole) ?? (user.isAdmin ? 'ADMIN' : 'USER');
+
+    // Envía correo (no bloquea si falla)
+    if (created) {
+      await authService.sendWelcomeForSso(user);
+    } else {
+      await authService.sendLoginForSso(user);
+    }
 
       const token = await authService.generateToken({
         sub: user.id,

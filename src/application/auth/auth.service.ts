@@ -102,36 +102,31 @@ export class AuthService {
    *  ⚠️ No enviamos correos aquí para no spamear en endpoints tipo /auth/me.
    *  Para SSO, dispara correos tras el callback real de login (ver helper más abajo).
    */
-  async validateUser(payload: any) {
+  async validateUser(payload: any): Promise<{ user: any; created: boolean }> {
     const sub = payload.sub;
     const email = payload.email || null;
     const name = payload.name || (email ? email.split('@')[0] : 'user');
 
     let user = await this.usersService.findByAuth0Id(sub);
+    let created = false;
 
     if (!user) {
       if (email) {
         const byEmail = await this.usersService.findByEmail(email);
         if (byEmail && !byEmail.auth0Id) {
           const patch: any = { auth0Id: sub };
-          if (this.isAdminEmail(email)) {
-            patch.role = 'ADMIN';
-          } else if (!byEmail.role) {
-            patch.role = 'USER';
-          }
+          if (this.isAdminEmail(email)) patch.role = 'ADMIN';
+          else if (!byEmail.role) patch.role = 'USER';
           await this.usersService.updateUser(byEmail.id, patch as any);
-          return this.usersService.findOne(byEmail.id);
+          user = await this.usersService.findOne(byEmail.id);
+          return { user, created }; // enlazado, no “nuevo”
         }
       }
       const role: AppRole = this.isAdminEmail(email) ? 'ADMIN' : 'USER';
       user = await this.usersService.createUser({
-        username: name,
-        email,
-        phone: null,
-        password: null,
-        role,
-        auth0Id: sub,
+        username: name, email, phone: null, password: null, role, auth0Id: sub,
       } as any);
+      created = true;
     } else if (email && this.isAdminEmail(email) && user.role !== 'ADMIN') {
       await this.usersService.updateUser(user.id, { role: 'ADMIN' } as any);
       user = await this.usersService.findOne(user.id);
@@ -142,7 +137,7 @@ export class AuthService {
       user = await this.usersService.findOne(user.id);
     }
 
-    return user;
+    return { user, created };
   }
 
   /** Registro LOCAL */
