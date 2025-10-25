@@ -1,9 +1,13 @@
-import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UsersService } from 'src/application/users/users.service';
 import { ROLES_KEY } from '../types/roles.decorator';
 import { AppRole } from '@prisma/client';
-
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -29,7 +33,9 @@ export class RolesGuard implements CanActivate {
     // 2) Si no vino el role (p.ej. JWT de Auth0 sin claims), consultamos DB
     if (!role && (u.sub || u.id || u.userId)) {
       try {
-        const dbUser = await this.usersService.findOne(u.sub ?? u.id ?? u.userId);
+        const dbUser = await this.usersService.findOne(
+          u.sub ?? u.id ?? u.userId,
+        );
         role = dbUser?.role;
         isAdminFlag = isAdminFlag || !!dbUser?.isAdmin;
       } catch {
@@ -40,7 +46,7 @@ export class RolesGuard implements CanActivate {
     // 3) Evaluación: ADMIN pasa si role === ADMIN o isAdmin === true
     const isAdmin = role === AppRole.ADMIN || isAdminFlag === true;
 
-    const allowed = requiredRoles.some(r => {
+    const allowed = requiredRoles.some((r) => {
       if (r === AppRole.ADMIN) return isAdmin;
       return role === r;
     });
@@ -49,5 +55,5 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('Insufficient role');
     }
     return true;
-    }
+  }
 }

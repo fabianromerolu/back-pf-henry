@@ -1,5 +1,9 @@
 // src/application/auth/auth.service.ts
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import axios from 'axios';
@@ -56,7 +60,7 @@ export class AuthService {
     const envList = (process.env.ADMIN_DOMAINS || '')
       .toLowerCase()
       .split(/[,\s]+/)
-      .map(s => s.trim())
+      .map((s) => s.trim())
       .filter(Boolean);
     if (!email || !domain || envList.length === 0) return false;
     return new Set(envList).has(domain);
@@ -65,7 +69,12 @@ export class AuthService {
   /** Genera JWT con role */
   async generateToken(payload: JwtAppPayload): Promise<string> {
     return this.jwtService.sign(
-      { sub: payload.sub, email: payload.email, name: payload.name, role: payload.role },
+      {
+        sub: payload.sub,
+        email: payload.email,
+        name: payload.name,
+        role: payload.role,
+      },
       { expiresIn: '60m' },
     );
   }
@@ -76,14 +85,19 @@ export class AuthService {
       const decoded = await this.jwtService.verifyAsync<JwtPayload>(token, {
         secret: process.env.JWT_SECRET,
       });
-      if (!decoded.sub || !decoded.email) throw new Error('Invalid token structure');
-      if (decoded.iss !== `${process.env.AUTH0_BASE_URL}/`) throw new Error('Invalid token issuer');
+      if (!decoded.sub || !decoded.email)
+        throw new Error('Invalid token structure');
+      if (decoded.iss !== `${process.env.AUTH0_BASE_URL}/`)
+        throw new Error('Invalid token issuer');
 
       const expectedAud = process.env.AUTH0_AUDIENCE;
       if (Array.isArray(decoded.aud)) {
-        if (expectedAud && !decoded.aud.includes(expectedAud)) throw new Error('Invalid token audience');
+        if (expectedAud && !decoded.aud.includes(expectedAud))
+          throw new Error('Invalid token audience');
       } else {
-        const valid = expectedAud ? decoded.aud === expectedAud : decoded.aud === process.env.AUTH0_CLIENT_ID;
+        const valid = expectedAud
+          ? decoded.aud === expectedAud
+          : decoded.aud === process.env.AUTH0_CLIENT_ID;
         if (!valid) throw new Error('Invalid token audience');
       }
       return decoded;
@@ -92,13 +106,16 @@ export class AuthService {
     }
   }
 
-  private sanitizeRoleForRegistration(requested?: string | null, email?: string | null): AppRole {
+  private sanitizeRoleForRegistration(
+    requested?: string | null,
+    email?: string | null,
+  ): AppRole {
     if (this.isAdminEmail(email)) return 'ADMIN';
     if (requested === 'RENTER') return 'RENTER';
     return 'USER';
   }
 
-  /** Crea/actualiza usuario desde SSO (Auth0). 
+  /** Crea/actualiza usuario desde SSO (Auth0).
    *  ⚠️ No enviamos correos aquí para no spamear en endpoints tipo /auth/me.
    *  Para SSO, dispara correos tras el callback real de login (ver helper más abajo).
    */
@@ -124,7 +141,12 @@ export class AuthService {
       }
       const role: AppRole = this.isAdminEmail(email) ? 'ADMIN' : 'USER';
       user = await this.usersService.createUser({
-        username: name, email, phone: null, password: null, role, auth0Id: sub,
+        username: name,
+        email,
+        phone: null,
+        password: null,
+        role,
+        auth0Id: sub,
       } as any);
       created = true;
     } else if (email && this.isAdminEmail(email) && user.role !== 'ADMIN') {
@@ -142,12 +164,23 @@ export class AuthService {
 
   /** Registro LOCAL */
   async register(dto: any /* CreateUserDto */) {
-    const { email, password, confirmPassword, username, name, phone, role: requestedRole } = dto;
+    const {
+      email,
+      password,
+      confirmPassword,
+      username,
+      name,
+      phone,
+      role: requestedRole,
+    } = dto;
 
     if (!password || !confirmPassword) {
-      throw new BadRequestException('Password and confirmPassword are required');
+      throw new BadRequestException(
+        'Password and confirmPassword are required',
+      );
     }
-    if (password !== confirmPassword) throw new BadRequestException('Passwords do not match');
+    if (password !== confirmPassword)
+      throw new BadRequestException('Passwords do not match');
 
     const exists = await this.usersService.findByEmail(email);
     if (exists) throw new BadRequestException('Email already exists');
@@ -174,7 +207,10 @@ export class AuthService {
       role: user.role as AppRole,
     });
 
-    return { accessToken: token, user: { id: user.id, email: user.email, role: user.role } };
+    return {
+      accessToken: token,
+      user: { id: user.id, email: user.email, role: user.role },
+    };
   }
 
   /** Login LOCAL */
@@ -182,9 +218,12 @@ export class AuthService {
     const { email, password } = dto;
     if (!password) throw new BadRequestException('Password is required');
 
-    const user = await this.usersService.findByEmail(email, { withPassword: true });
+    const user = await this.usersService.findByEmail(email, {
+      withPassword: true,
+    });
     if (!user) throw new UnauthorizedException('Invalid credentials');
-    if (!user.password) throw new UnauthorizedException('This account uses SSO');
+    if (!user.password)
+      throw new UnauthorizedException('This account uses SSO');
 
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) throw new UnauthorizedException('Invalid credentials');
@@ -204,7 +243,10 @@ export class AuthService {
       role: fresh.role as AppRole,
     });
 
-    return { accessToken: token, user: { id: fresh.id, email: fresh.email, role: fresh.role } };
+    return {
+      accessToken: token,
+      user: { id: fresh.id, email: fresh.email, role: fresh.role },
+    };
   }
 
   /* ======= Opcional: úsalo en tu callback SSO (Auth0) =======
@@ -213,23 +255,45 @@ export class AuthService {
    *   if (isNewUser) await authService.sendWelcomeForSso(user);
    *   else await authService.sendLoginForSso(user);
    */
-  async sendWelcomeForSso(user: { email?: string | null; name?: string | null; username?: string | null }) {
-    await this.safeSendWelcome(user.email, user.name ?? user.username ?? undefined);
+  async sendWelcomeForSso(user: {
+    email?: string | null;
+    name?: string | null;
+    username?: string | null;
+  }) {
+    await this.safeSendWelcome(
+      user.email,
+      user.name ?? user.username ?? undefined,
+    );
   }
-  async sendLoginForSso(user: { email?: string | null; name?: string | null; username?: string | null }) {
-    await this.safeSendLogin(user.email, user.name ?? user.username ?? undefined);
+  async sendLoginForSso(user: {
+    email?: string | null;
+    name?: string | null;
+    username?: string | null;
+  }) {
+    await this.safeSendLogin(
+      user.email,
+      user.name ?? user.username ?? undefined,
+    );
   }
 
   /** Opcionales: refresh/revoke */
-  async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+  async refreshToken(
+    refreshToken: string,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     try {
-      const res = await axios.post(`${process.env.AUTH0_BASE_URL}/oauth/token`, {
-        grant_type: 'refresh_token',
-        client_id: process.env.AUTH0_CLIENT_ID,
-        client_secret: process.env.AUTH0_CLIENT_SECRET,
-        refresh_token: refreshToken,
-      });
-      return { accessToken: res.data.access_token, refreshToken: res.data.refresh_token || refreshToken };
+      const res = await axios.post(
+        `${process.env.AUTH0_BASE_URL}/oauth/token`,
+        {
+          grant_type: 'refresh_token',
+          client_id: process.env.AUTH0_CLIENT_ID,
+          client_secret: process.env.AUTH0_CLIENT_SECRET,
+          refresh_token: refreshToken,
+        },
+      );
+      return {
+        accessToken: res.data.access_token,
+        refreshToken: res.data.refresh_token || refreshToken,
+      };
     } catch {
       throw new Error('Token refresh failed');
     }

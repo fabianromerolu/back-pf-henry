@@ -13,7 +13,17 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiQuery, ApiTags, ApiOkResponse, ApiCreatedResponse, ApiNoContentResponse, ApiBadRequestResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiTags,
+  ApiOkResponse,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 import { UsersService } from 'src/application/users/users.service';
 import { PinsService } from 'src/application/pins/pins.service';
@@ -27,8 +37,6 @@ import { Roles } from 'src/application/auth/types/roles.decorator';
 import { RolesGuard } from 'src/application/auth/guards/roles.guard';
 import { AppRole, UserStatus } from '@prisma/client';
 import { PinResponseDto } from '../pins/dtos/pin-response.dto';
-
-
 
 @ApiTags('Users')
 @Controller('users')
@@ -46,7 +54,9 @@ export class UsersController {
   async getMe(@Req() req: any) {
     const id = req.user?.sub;
     const user = await this.usersService.findOne(id);
-    return plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
+    return plainToInstance(UserResponseDto, user, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @UseGuards(AnyJwtGuard)
@@ -57,24 +67,36 @@ export class UsersController {
   async updateMe(@Req() req: any, @Body() dto: UpdateProfileDto) {
     const id = req.user?.sub;
     const user = await this.usersService.updateMe(id, dto);
-    return plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
+    return plainToInstance(UserResponseDto, user, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @UseGuards(AnyJwtGuard)
   @ApiBearerAuth()
   @Patch('me/profile-picture')
-  @ApiOperation({ summary: 'Update my profile picture (by Cloudinary publicId)' })
+  @ApiOperation({
+    summary: 'Update my profile picture (by Cloudinary publicId)',
+  })
   @ApiOkResponse({ type: UserResponseDto })
-  async updateMyProfilePicture(@Req() req: any, @Body() body: UpdateProfilePictureDto) {
+  async updateMyProfilePicture(
+    @Req() req: any,
+    @Body() body: UpdateProfilePictureDto,
+  ) {
     const id = req.user?.sub;
-    const user = await this.usersService.uploadProfilePicture(id, body.publicId);
-    return plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
+    const user = await this.usersService.uploadProfilePicture(
+      id,
+      body.publicId,
+    );
+    return plainToInstance(UserResponseDto, user, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @UseGuards(AnyJwtGuard)
   @ApiBearerAuth()
   @Get('me/pins')
-  @ApiOperation({ summary: "My pins (paginated)" })
+  @ApiOperation({ summary: 'My pins (paginated)' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
   async getMyPins(
@@ -90,7 +112,7 @@ export class UsersController {
   @UseGuards(AnyJwtGuard)
   @ApiBearerAuth()
   @Get('me/pins-count')
-  @ApiOperation({ summary: "My pins count" })
+  @ApiOperation({ summary: 'My pins count' })
   async getMyPinsCount(@Req() req: any) {
     const id = req.user?.sub;
     return this.pinsService.getUserPinsCountService(id);
@@ -103,7 +125,11 @@ export class UsersController {
   @ApiOperation({ summary: 'List users (paginated + filters)' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
-  @ApiQuery({ name: 'q', required: false, description: 'search by email/username/name' })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    description: 'search by email/username/name',
+  })
   @ApiQuery({ name: 'role', required: false, enum: AppRole })
   @ApiQuery({ name: 'status', required: false, enum: UserStatus })
   @ApiQuery({ name: 'city', required: false })
@@ -115,13 +141,21 @@ export class UsersController {
     @Query('status') status?: UserStatus,
     @Query('city') city?: string,
   ) {
-    const result = await this.usersService.list({ page, limit, q, role, status, city });
+    const result = await this.usersService.list({
+      page,
+      limit,
+      q,
+      role,
+      status,
+      city,
+    });
     return {
-      data: result.data.map(u => plainToInstance(UserResponseDto, u, { excludeExtraneousValues: true })),
+      data: result.data.map((u) =>
+        plainToInstance(UserResponseDto, u, { excludeExtraneousValues: true }),
+      ),
       meta: result.meta,
     };
   }
-
 
   @UseGuards(AnyJwtGuard, RolesGuard)
   @ApiBearerAuth()
@@ -132,9 +166,10 @@ export class UsersController {
   @ApiOkResponse({ type: UserResponseDto })
   async getUser(@Param('id', new ParseUUIDPipe()) id: string) {
     const user = await this.usersService.findOne(id);
-    return plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
+    return plainToInstance(UserResponseDto, user, {
+      excludeExtraneousValues: true,
+    });
   }
-
 
   @UseGuards(AnyJwtGuard, RolesGuard)
   @ApiBearerAuth()
@@ -145,7 +180,9 @@ export class UsersController {
   @ApiBadRequestResponse()
   async createUser(@Body() dto: CreateUserDto) {
     const user = await this.usersService.createUser(dto);
-    return plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
+    return plainToInstance(UserResponseDto, user, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @UseGuards(AnyJwtGuard, RolesGuard)
@@ -155,9 +192,14 @@ export class UsersController {
   @ApiOperation({ summary: 'Update user (PATCH)' })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOkResponse({ type: UserResponseDto })
-  async updateUserPatch(@Param('id', new ParseUUIDPipe()) id: string, @Body() dto: UpdateUserDto) {
+  async updateUserPatch(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateUserDto,
+  ) {
     const user = await this.usersService.updateUser(id, dto);
-    return plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
+    return plainToInstance(UserResponseDto, user, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @UseGuards(AnyJwtGuard, RolesGuard)
@@ -173,15 +215,22 @@ export class UsersController {
   }
 
   @Patch(':id/profile-picture')
-  @ApiOperation({ summary: 'Update profile picture (Cloudinary publicId → URL)' })
+  @ApiOperation({
+    summary: 'Update profile picture (Cloudinary publicId → URL)',
+  })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOkResponse({ type: UserResponseDto })
   async uploadProfilePicture(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() body: UpdateProfilePictureDto,
   ) {
-    const user = await this.usersService.uploadProfilePicture(id, body.publicId);
-    return plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
+    const user = await this.usersService.uploadProfilePicture(
+      id,
+      body.publicId,
+    );
+    return plainToInstance(UserResponseDto, user, {
+      excludeExtraneousValues: true,
+    });
   }
 
   @Get(':id/pins')

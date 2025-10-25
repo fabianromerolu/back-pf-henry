@@ -19,15 +19,23 @@ export class UserResponseDto {
   @ApiProperty({ required: false }) @Expose() country?: string | null;
 
   @ApiProperty({ required: false }) @Expose() profilePicture?: string | null;
-  @ApiProperty({ required: false, maxLength: 150 }) @Expose() biography?: string | null;
+  @ApiProperty({ required: false, maxLength: 150 }) @Expose() biography?:
+    | string
+    | null;
 
   @ApiProperty({ example: 0 }) @Expose() pinsCount: number;
 
-  @ApiProperty({ type: String }) @Expose()
-  @Transform(({ value }) => (value instanceof Date ? value.toISOString() : value ?? null))
+  @ApiProperty({ type: String })
+  @Expose()
+  @Transform(({ value }) =>
+    value instanceof Date ? value.toISOString() : (value ?? null),
+  )
   createdAt: string;
 
-  @ApiProperty({ type: String }) @Expose()
-  @Transform(({ value }) => (value instanceof Date ? value.toISOString() : value ?? null))
+  @ApiProperty({ type: String })
+  @Expose()
+  @Transform(({ value }) =>
+    value instanceof Date ? value.toISOString() : (value ?? null),
+  )
   updatedAt: string;
 }
