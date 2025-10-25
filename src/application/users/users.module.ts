@@ -5,10 +5,7 @@ import { PinModule } from '../pins/pins.module';
 import { FilesModule } from '../files/files.module';
 
 @Module({
-  imports: [
-    PinModule,
-    FilesModule,
-  ],
+  imports: [PinModule, FilesModule],
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService],

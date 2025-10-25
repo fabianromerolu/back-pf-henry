@@ -24,7 +24,13 @@ import { MailerModule } from '../mailer/mailer.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, LocalJwtStrategy, AnyJwtGuard, RolesGuard],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    LocalJwtStrategy,
+    AnyJwtGuard,
+    RolesGuard,
+  ],
   exports: [AuthService, AnyJwtGuard, RolesGuard],
 })
 export class AuthModule {}

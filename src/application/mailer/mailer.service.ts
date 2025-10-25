@@ -14,7 +14,9 @@ export class MailerService {
     const user = process.env.MAIL_USER;
     const pass = process.env.MAIL_PASS;
 
-    this.from = process.env.MAIL_FROM || (user ? `"Volantia" <${user}>` : '"Volantia" <no-reply@volantia.app>');
+    this.from =
+      process.env.MAIL_FROM ||
+      (user ? `"Volantia" <${user}>` : '"Volantia" <no-reply@volantia.app>');
 
     this.transporter = nodemailer.createTransport({
       host,

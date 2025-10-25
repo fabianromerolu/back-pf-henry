@@ -1,15 +1,31 @@
 import {
-  Controller, Get, Req, Post, Body, Res, HttpCode, HttpStatus, Query, UseGuards
+  Controller,
+  Get,
+  Req,
+  Post,
+  Body,
+  Res,
+  HttpCode,
+  HttpStatus,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
-  ApiTags, ApiOperation, ApiBody, ApiOkResponse, ApiUnauthorizedResponse,
-  ApiBadRequestResponse, ApiCreatedResponse, ApiFoundResponse, ApiQuery, ApiResponse
+  ApiTags,
+  ApiOperation,
+  ApiBody,
+  ApiOkResponse,
+  ApiUnauthorizedResponse,
+  ApiBadRequestResponse,
+  ApiCreatedResponse,
+  ApiFoundResponse,
+  ApiQuery,
+  ApiResponse,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { AnyJwtGuard } from './guards/any-jwt.guard';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { LoginUserDto } from './dtos/login-user.dto';
-
 
 function frontBase(): string {
   return (
@@ -83,7 +99,10 @@ export class AuthController {
   @ApiBody({ type: CreateUserDto })
   @ApiCreatedResponse({ description: 'Usuario creado.' })
   @ApiBadRequestResponse({ description: 'Datos inválidos.' })
-  async register(@Body() dto: CreateUserDto, @Res({ passthrough: true }) res: any) {
+  async register(
+    @Body() dto: CreateUserDto,
+    @Res({ passthrough: true }) res: any,
+  ) {
     const out = await this.authService.register(dto);
 
     res.cookie('volantia_token', out.accessToken, {

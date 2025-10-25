@@ -1,4 +1,3 @@
-// src/application/pins/pins.controller.ts
 import {
   Body,
   Controller,
@@ -35,8 +34,17 @@ import { CreatePinDto } from './dtos/create-pin.dto';
 import { UpdateStatusDto } from './dtos/update-status.dto';
 import { UpdatePinDto } from './dtos/update-pin.dto';
 import { PinResponseDto } from './dtos/pin-response.dto';
+import { PaginatedPinsResponseDto } from './dtos/paginated-pins-response.dto';
 
-function pickUserId(req: any): string | undefined {
+interface RequestWithUser {
+  user?: {
+    id?: string;
+    sub?: string;
+    userId?: string;
+  };
+}
+
+function pickUserId(req: RequestWithUser): string | undefined {
   return req?.user?.sub ?? req?.user?.id ?? req?.user?.userId ?? undefined;
 }
 
@@ -45,15 +53,17 @@ function pickUserId(req: any): string | undefined {
 export class PinsController {
   constructor(private readonly pins: PinsService) {}
 
-  /* === Public === */
-
-  @Get()
+  @Get('public')
   @ApiOperation({ summary: 'List published pins (paginated + filters)' })
-  @ApiOkResponse({ description: 'List', type: PinResponseDto, isArray: true })
+  @ApiOkResponse({
+    description: 'Paginated list of public pins',
+    type: PaginatedPinsResponseDto,
+  })
   @ApiQuery({ name: 'page', required: false, example: 1 })
-  @ApiQuery({ name: 'limit', required: false, example: 20 })
-  async list(@Query() query: QueryPinsDto) {
-    // antes: this.pins.list(query)  -> NO existe
+  @ApiQuery({ name: 'limit', required: false, example: 12 })
+  async listPublic(
+    @Query() query: QueryPinsDto,
+  ): Promise<PaginatedPinsResponseDto> {
     return this.pins.listPublic(query);
   }
 
@@ -74,7 +84,7 @@ export class PinsController {
   @Get('mine/list')
   @ApiOperation({ summary: "List my pins (owner's view)" })
   @ApiOkResponse({ description: 'List', type: PinResponseDto, isArray: true })
-  async listMine(@Req() req: any, @Query() query: QueryPinsDto) {
+  async listMine(@Req() req: RequestWithUser, @Query() query: QueryPinsDto) {
     const uid = pickUserId(req);
     if (!uid) throw new ForbiddenException('Not authenticated');
     return this.pins.listMine(uid, query);
@@ -87,7 +97,7 @@ export class PinsController {
   @ApiCreatedResponse({ description: 'Created', type: PinResponseDto })
   @ApiUnauthorizedResponse({ description: 'Missing/invalid JWT' })
   @ApiBadRequestResponse({ description: 'Validation error' })
-  async create(@Req() req: any, @Body() dto: CreatePinDto) {
+  async create(@Req() req: RequestWithUser, @Body() dto: CreatePinDto) {
     const uid = pickUserId(req);
     if (!uid) throw new ForbiddenException('Not authenticated');
     // antes: this.pins.create(uid, dto) -> NO existe
@@ -102,7 +112,11 @@ export class PinsController {
   @ApiOkResponse({ description: 'Updated', type: PinResponseDto })
   @ApiUnauthorizedResponse({ description: 'Missing/invalid JWT' })
   @ApiForbiddenResponse({ description: 'Not owner or not allowed' })
-  async update(@Req() req: any, @Param('id', new ParseUUIDPipe()) id: string, @Body() dto: UpdatePinDto) {
+  async update(
+    @Req() req: RequestWithUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdatePinDto,
+  ) {
     const uid = pickUserId(req);
     if (!uid) throw new ForbiddenException('Not authenticated');
     // antes: this.pins.update(uid, id, dto) -> NO existe
@@ -112,11 +126,17 @@ export class PinsController {
   @UseGuards(AnyJwtGuard)
   @ApiBearerAuth()
   @Patch(':id/status')
-  @ApiOperation({ summary: 'Change status (owner: publish/pause, admin: can block)' })
+  @ApiOperation({
+    summary: 'Change status (owner: publish/pause, admin: can block)',
+  })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOkResponse({ description: 'Status updated', type: PinResponseDto })
   @ApiForbiddenResponse({ description: 'Not allowed' })
-  async setStatus(@Req() req: any, @Param('id', new ParseUUIDPipe()) id: string, @Body() body: UpdateStatusDto) {
+  async setStatus(
+    @Req() req: RequestWithUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: UpdateStatusDto,
+  ) {
     const uid = pickUserId(req);
     if (!uid) throw new ForbiddenException('Not authenticated');
     // IMPORTANTE: el servicio espera un objeto { status }, no un string suelto
@@ -129,7 +149,10 @@ export class PinsController {
   @ApiOperation({ summary: 'Delete pin (owner or admin)' })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOkResponse({ description: 'Deleted' })
-  async remove(@Req() req: any, @Param('id', new ParseUUIDPipe()) id: string) {
+  async remove(
+    @Req() req: RequestWithUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
     const uid = pickUserId(req);
     if (!uid) throw new ForbiddenException('Not authenticated');
     // antes: this.pins.remove(uid, id) -> NO existe

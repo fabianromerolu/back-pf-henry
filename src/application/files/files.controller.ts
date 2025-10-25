@@ -9,7 +9,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { FilesService } from './files.service';
-import { AuthGuard } from '@nestjs/passport'; 
+import { AuthGuard } from '@nestjs/passport';
 
 function sanitizeFolder(input: string) {
   return (input || '').replace(/(^\/+|\/+$)/g, '').replace(/\.\./g, '');
@@ -20,7 +20,7 @@ function sanitizeFolder(input: string) {
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
-  @UseGuards(AuthGuard(['local-jwt', 'jwt'])) 
+  @UseGuards(AuthGuard(['local-jwt', 'jwt']))
   @ApiBearerAuth()
   @Get('signature')
   @ApiOperation({
@@ -31,7 +31,8 @@ export class FilesController {
   @ApiQuery({
     name: 'folder',
     required: false,
-    description: 'Carpeta destino (namespace). Si se omite, se usará "pins/<userId>".',
+    description:
+      'Carpeta destino (namespace). Si se omite, se usará "pins/<userId>".',
     example: 'user-avatars',
   })
   @ApiOkResponse({ description: 'Signed params generated successfully.' })
