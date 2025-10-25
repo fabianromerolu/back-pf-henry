@@ -1,68 +1,81 @@
-// src/application/mailer/mailer.service.ts
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import hbs from 'nodemailer-express-handlebars';
+import * as path from 'path';
 
 @Injectable()
 export class MailerService {
-  private readonly logger = new Logger(MailerService.name);
   private transporter: nodemailer.Transporter;
-  private readonly from: string;
+  private from: string;
 
   constructor() {
-    const host = process.env.MAIL_HOST || 'smtp.gmail.com';
-    const port = Number(process.env.MAIL_PORT || 587);
-    const user = process.env.MAIL_USER;
-    const pass = process.env.MAIL_PASS;
-
-    this.from = process.env.MAIL_FROM || (user ? `"Volantia" <${user}>` : '"Volantia" <no-reply@volantia.app>');
-
     this.transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465, // solo true si usas 465
-      auth: user && pass ? { user, pass } : undefined,
-      // pool: true, // opcional si vas a mandar muchos correos
+      host: process.env.MAIL_HOST,
+      port: Number(process.env.MAIL_PORT),
+      secure: false, // Gmail en 587 usa STARTTLS
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS,
+      },
+      requireTLS: true,
     });
+
+    // Configuración de Handlebars
+    this.transporter.use(
+      'compile',
+      hbs({
+        viewEngine: {
+          extname: '.hbs',
+          layoutsDir: path.join(process.cwd(), 'src', 'application', 'mailer', 'templates'),
+          defaultLayout: false,
+        },
+        viewPath: path.join(process.cwd(), 'src', 'application', 'mailer', 'templates'),
+        extName: '.hbs',
+      }),
+    );
+
+    this.from = `"Volantia" <${process.env.MAIL_USER}>`;
   }
 
-  /** Email simple de bienvenida para nuevos registros */
   async sendWelcomeEmail(to: string, name?: string | null) {
-    const safeName = (name || '').trim() || '¡Bienvenido!';
-    const html = `
-      <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.5">
-        <h2 style="margin:0 0 8px 0">¡Bienvenido, ${safeName}!</h2>
-        <p>Gracias por unirte a nuestra plataforma. Esperamos que disfrutes la experiencia.</p>
-        <p>Si tienes dudas, responde a este correo y te ayudamos.</p>
-        <br/>
-        <p><b>Equipo Volantia</b></p>
-      </div>
-    `;
-
     await this.transporter.sendMail({
       from: this.from,
       to,
       subject: 'Bienvenido a Volantia 🎉',
-      html,
+      template: 'welcome', // usa welcome.hbs
+      context: {
+        name: name || '¡Bienvenido!',
+        actionUrl: process.env.FRONTEND_URL || 'http://localhost:3001',
+        year: new Date().getFullYear(),
+      },
+      attachments: [
+        {
+          filename: 'volantia.png',
+          path: path.join(process.cwd(), 'assets', 'volantia.png'),
+          cid: 'volantia-logo',
+        },
+      ],
     });
   }
 
-  /** Email breve en cada login (si así lo deseas) */
   async sendLoginEmail(to: string, name?: string | null) {
-    const safeName = (name || '').trim() || '';
-    const html = `
-      <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.5">
-        <p>Hola ${safeName || '👋'}, detectamos un nuevo inicio de sesión en tu cuenta.</p>
-        <p>Si no fuiste tú, cambia tu contraseña de inmediato.</p>
-        <br/>
-        <p><b>Equipo Volantia</b></p>
-      </div>
-    `;
-
     await this.transporter.sendMail({
       from: this.from,
       to,
-      subject: 'Nuevo inicio de sesión',
-      html,
+      subject: 'Nuevo inicio de sesión detectado',
+      template: 'login', // usa login.hbs
+      context: {
+        name: name || 'Usuario',
+        resetUrl: (process.env.FRONTEND_URL || 'http://localhost:3001') + '/reset-password',
+        year: new Date().getFullYear(),
+      },
+      attachments: [
+        {
+          filename: 'volantia.png',
+          path: path.join(process.cwd(), 'assets', 'volantia.png'),
+          cid: 'volantia-logo',
+        },
+      ],
     });
   }
 }
