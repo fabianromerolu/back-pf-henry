@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    
     "module": "commonjs",
     "declaration": true,
     "removeComments": true,
@@ -17,5 +18,8 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false
-  }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+
 }

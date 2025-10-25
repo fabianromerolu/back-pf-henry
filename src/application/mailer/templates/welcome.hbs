@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bienvenido a Volantia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hind&family=Taivaj&display=swap" rel="stylesheet" />
+  </head>
+  <body style="margin:0;padding:0;background-color:#f4f4f7;font-family:'Hind',Arial,Helvetica,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7;padding:40px 0;">
+      <tr>
+        <td align="center">
+          <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+            <!-- Header con logo embebido -->
+            <tr>
+              <td style="background:#03145f ;padding:20px;text-align:center;">
+                <img src="cid:volantia-logo" alt="Volantia" style="width:220px; height:auto;" />
+              </td>
+            </tr>
+            <!-- Contenido -->
+            <tr>
+              <td style="padding:40px;text-align:left;color:#333333;">
+                <h2 style="margin-top:0;color:#141E61;font-family:'Taivaj',Arial,Helvetica,sans-serif;">¡Bienvenido, {{name}}!</h2>
+                <p style="font-size:16px;line-height:1.6;">
+                  Gracias por unirte a nuestra plataforma. Estamos encantados de tenerte con nosotros.
+                </p>
+                <p style="font-size:16px;line-height:1.6;">
+                  Explora, conecta y disfruta de todo lo que Volantia tiene para ofrecerte.
+                </p>
+                <div style="margin:30px 0;text-align:center;">
+                  <a href="{{actionUrl}}" style="background:#141E61;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:6px;font-weight:bold;display:inline-block;font-family:'Taivaj',Arial,Helvetica,sans-serif;">
+                    Comenzar ahora
+                  </a>
+                </div>
+                <p style="font-size:14px;color:#666666;">
+                  Si tienes dudas, responde a este correo y estaremos felices de ayudarte.
+                </p>
+                <p style="margin-top:40px;font-weight:bold;">Equipo Volantia</p>
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td style="background:#f4f4f7;padding:20px;text-align:center;font-size:12px;color:#999999;">
+                © {{year}} Volantia. Todos los derechos reservados.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
