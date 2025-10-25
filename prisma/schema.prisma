@@ -9,6 +9,11 @@ datasource db {
   relationMode = "foreignKeys"
 }
 
+enum BookingsStatus{
+  active
+  suspended
+}
+
 enum UserStatus {
   active
   suspended
@@ -190,20 +195,20 @@ model File {
 }
 
 model Bookings {
-  id            String          @id @default(uuid())
+  id           String          @id @default(uuid())
 
 
   startDate    DateTime        @db.Timestamptz(6)
   endDate      DateTime        @db.Timestamptz(6)
-  status        BookingsStatus  @default(active)
+  status       BookingsStatus  @default(active)
   totalPrice   Decimal         @db.Decimal(10, 2)
 
   createdAt    DateTime        @default(now()) @db.Timestamptz(6)
   updateAt     DateTime?       @db.Timestamptz(6)
   deletedAt    DateTime?       @db.Timestamptz(6)
 
-  userId     String
-  user        User              @relation("UserBookings", fields: [userId], references:[id])
-  pinId      String
-  pin         Pin               @relation("PinBookings", fields: [pinId], references:[id])
+  userId       String
+  user         User            @relation("UserBookings", fields: [userId], references:[id])
+  pinId        String
+  pin          Pin             @relation("PinBookings", fields: [pinId], references:[id])
 }
