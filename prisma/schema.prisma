@@ -108,6 +108,8 @@ model User {
   updatedAt       DateTime    @updatedAt @db.Timestamptz(6)
   deletedAt       DateTime?   @db.Timestamptz(6)
 
+  bookings        Bookings[]  @relation("UserBookings")
+
   @@index([role, status])
   @@index([city])
 }
@@ -157,6 +159,7 @@ model Pin {
 
   ownerId           String
   owner             User            @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  bookings          Bookings[]      @relation("PinBookings")
 
   createdAt         DateTime        @default(now()) @db.Timestamptz(6)
   updatedAt         DateTime        @updatedAt @db.Timestamptz(6)
@@ -184,4 +187,23 @@ model File {
   fileName String
   mimeType String
   url      String
+}
+
+model Bookings {
+  id            String          @id @default(uuid())
+
+
+  startDate    DateTime        @db.Timestamptz(6)
+  endDate      DateTime        @db.Timestamptz(6)
+  status        BookingsStatus  @default(active)
+  totalPrice   Decimal         @db.Decimal(10, 2)
+
+  createdAt    DateTime        @default(now()) @db.Timestamptz(6)
+  updateAt     DateTime?       @db.Timestamptz(6)
+  deletedAt    DateTime?       @db.Timestamptz(6)
+
+  userId     String
+  user        User              @relation("UserBookings", fields: [userId], references:[id])
+  pinId      String
+  pin         Pin               @relation("PinBookings", fields: [pinId], references:[id])
 }
