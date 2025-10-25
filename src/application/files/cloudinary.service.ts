@@ -5,8 +5,13 @@ import { v2 as cloudinary } from 'cloudinary';
 export class CloudinaryService {
   constructor() {
     // Cargar configuración de entorno
-    const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = process.env;
-    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
+    const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } =
+      process.env;
+    if (
+      !CLOUDINARY_CLOUD_NAME ||
+      !CLOUDINARY_API_KEY ||
+      !CLOUDINARY_API_SECRET
+    ) {
       // No arrojamos error aquí para no romper el arranque, pero sí avisamos.
       // Si te parece mejor, lanza un Error y exige las envs.
       console.warn(

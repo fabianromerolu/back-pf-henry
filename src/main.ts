@@ -19,7 +19,10 @@ function frontBase(): string {
 
 function parseOrigins(env?: string): string[] {
   if (!env) return ['http://localhost:3001'];
-  return env.split(',').map(s => s.trim()).filter(Boolean);
+  return env
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 type AppRole = 'ADMIN' | 'RENTER' | 'USER';
@@ -50,10 +53,15 @@ async function bootstrap() {
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
-      'Content-Type', 'Authorization', 'X-Requested-With',
-      'x-signature', 'x-request-id', 'accept', 'accept-language'
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'x-signature',
+      'x-request-id',
+      'accept',
+      'accept-language',
     ],
-    exposedHeaders: ['Location']
+    exposedHeaders: ['Location'],
   });
 
   app.use(cookieParser());
@@ -71,39 +79,59 @@ async function bootstrap() {
   };
 
   // 3) Evitar token en query → set cookie httpOnly (afterCallback de Auth0)
-  const afterCb: NonNullable<ConfigParams['afterCallback']> =
-    async (req, res, session, state: any) => {
-      const oidc = (req as any).oidc || {};
-      let sub: string | undefined;
-      let email: string | undefined;
-      let name: string | undefined;
+  const afterCb: NonNullable<ConfigParams['afterCallback']> = async (
+    req,
+    res,
+    session,
+    state: any,
+  ) => {
+    const oidc = (req as any).oidc || {};
+    let sub: string | undefined;
+    let email: string | undefined;
+    let name: string | undefined;
 
-      if (oidc.user?.sub) ({ sub, email, name } = oidc.user as any);
+    if (oidc.user?.sub) ({ sub, email, name } = oidc.user as any);
 
-      if (!sub && typeof oidc.fetchUserInfo === 'function') {
-        try {
-          const ui = await oidc.fetchUserInfo();
-          sub = ui?.sub; email = ui?.email; name = ui?.name;
-        } catch (e) { Logger.warn(`fetchUserInfo failed: ${e}`); }
+    if (!sub && typeof oidc.fetchUserInfo === 'function') {
+      try {
+        const ui = await oidc.fetchUserInfo();
+        sub = ui?.sub;
+        email = ui?.email;
+        name = ui?.name;
+      } catch (e) {
+        Logger.warn(`fetchUserInfo failed: ${e}`);
       }
+    }
 
-      if (!sub && (session as any)?.id_token) {
-        try {
-          const b64 = (session as any).id_token.split('.')[1];
-          const payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
-          sub = payload?.sub; email = payload?.email; name = payload?.name;
-        } catch (e) { Logger.warn(`id_token decode failed: ${e}`); }
+    if (!sub && (session as any)?.id_token) {
+      try {
+        const b64 = (session as any).id_token.split('.')[1];
+        const payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+        sub = payload?.sub;
+        email = payload?.email;
+        name = payload?.name;
+      } catch (e) {
+        Logger.warn(`id_token decode failed: ${e}`);
       }
+    }
 
-      if (!sub) {
-        const url = new URL(`${frontBase()}/login`);
-        url.searchParams.set('error', 'no_user_sub');
-        (req as any).openidState = { ...(req as any).openidState, returnTo: url.toString() };
-        return session;
-      }
+    if (!sub) {
+      const url = new URL(`${frontBase()}/login`);
+      url.searchParams.set('error', 'no_user_sub');
+      (req as any).openidState = {
+        ...(req as any).openidState,
+        returnTo: url.toString(),
+      };
+      return session;
+    }
 
-    const { user, created } = await authService.validateUser({ sub, email, name });
-    const role: AppRole = (user.role as AppRole) ?? (user.isAdmin ? 'ADMIN' : 'USER');
+    const { user, created } = await authService.validateUser({
+      sub,
+      email,
+      name,
+    });
+    const role: AppRole =
+      (user.role as AppRole) ?? (user.isAdmin ? 'ADMIN' : 'USER');
 
     // Envía correo (no bloquea si falla)
     if (created) {
@@ -112,41 +140,41 @@ async function bootstrap() {
       await authService.sendLoginForSso(user);
     }
 
-      const token = await authService.generateToken({
-        sub: user.id,
-        email: user.email,
-        name: user.name ?? user.username ?? user.email,
-        role,
-      });
+    const token = await authService.generateToken({
+      sub: user.id,
+      email: user.email,
+      name: user.name ?? user.username ?? user.email,
+      role,
+    });
 
-      // Cookie segura con el JWT
-      (res as any).cookie('volantia_token', token, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 1000 * 60 * 15, // 15 min
-        path: '/',
-      });
+    // Cookie segura con el JWT
+    (res as any).cookie('volantia_token', token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 1000 * 60 * 15, // 15 min
+      path: '/',
+    });
 
-      // Cookie legible por el front con el rol (opcional)
-      (res as any).cookie('volantia_role', role, {
-        httpOnly: false,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 días
-        path: '/',
-      });
+    // Cookie legible por el front con el rol (opcional)
+    (res as any).cookie('volantia_role', role, {
+      httpOnly: false,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 días
+      path: '/',
+    });
 
-      const desired = toSafePath(state?.returnTo);
-      const fallbackPath = roleDashboardPath(role, user.isAdmin);
-      const path = desired && desired !== '/login' ? desired : fallbackPath;
+    const desired = toSafePath(state?.returnTo);
+    const fallbackPath = roleDashboardPath(role, user.isAdmin);
+    const path = desired && desired !== '/login' ? desired : fallbackPath;
 
-      (req as any).openidState = {
-        ...(req as any).openidState,
-        returnTo: `${frontBase()}${path}`, // sin token en la URL
-      };
-      return session;
+    (req as any).openidState = {
+      ...(req as any).openidState,
+      returnTo: `${frontBase()}${path}`, // sin token en la URL
     };
+    return session;
+  };
 
   // 3.1) Montar Auth0 OIDC (Universal Login) en Express
   // Nota: casteamos a any para evitar roces de tipos si la versión de tipos difiere.

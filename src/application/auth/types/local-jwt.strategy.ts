@@ -5,7 +5,8 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 @Injectable()
 export class LocalJwtStrategy extends PassportStrategy(Strategy, 'local-jwt') {
   constructor() {
-    const extractFromCookie = (req: any) => req?.cookies?.volantia_token || null;
+    const extractFromCookie = (req: any) =>
+      req?.cookies?.volantia_token || null;
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -16,7 +17,7 @@ export class LocalJwtStrategy extends PassportStrategy(Strategy, 'local-jwt') {
     });
   }
 
-async validate(payload: any) {
-  return { id: payload.sub, email: payload.email, name: payload.name };
-}
+  async validate(payload: any) {
+    return { id: payload.sub, email: payload.email, name: payload.name };
+  }
 }

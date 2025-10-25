@@ -37,6 +37,7 @@ lerna-debug.log*
 
 # dotenv environment variable files
 .env
+.env.deploy
 .env.development
 .env.development.local
 .env.test.local
@@ -58,3 +59,5 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma
+
+docker-compose.yml

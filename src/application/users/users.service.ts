@@ -34,9 +34,9 @@ export class UsersService {
         { name: { contains: q, mode: 'insensitive' } },
       ];
     }
-    if (filters.role)   where.role = filters.role;
+    if (filters.role) where.role = filters.role;
     if (filters.status) where.status = filters.status;
-    if (filters.city)   where.city = filters.city;
+    if (filters.city) where.city = filters.city;
 
     const [items, total] = await this.prisma.$transaction([
       this.prisma.user.findMany({
@@ -48,7 +48,10 @@ export class UsersService {
       this.prisma.user.count({ where }),
     ]);
 
-    return { data: items, meta: { page, limit, total, pages: Math.ceil(total / limit) } };
+    return {
+      data: items,
+      meta: { page, limit, total, pages: Math.ceil(total / limit) },
+    };
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -118,7 +121,10 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { auth0Id } });
   }
 
-  async findByEmail(email: string, opts?: { withPassword?: boolean }): Promise<User | null> {
+  async findByEmail(
+    email: string,
+    opts?: { withPassword?: boolean },
+  ): Promise<User | null> {
     const normalized = this.normalizeEmail(email)!;
     // Prisma no oculta fields por select:false como TypeORM; decide aquí si seleccionas todo.
     return this.prisma.user.findUnique({ where: { email: normalized } });
