@@ -9,7 +9,7 @@ datasource db {
   relationMode = "foreignKeys"
 }
 
-enum BookingsStatus{
+enum BookingsStatus {
   active
   suspended
 }
