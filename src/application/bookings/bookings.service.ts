@@ -1,26 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { UpdateBookingDto } from './dto/update-booking.dto';
+import { PrismaService } from 'src/infra/prisma/prisma.service';
 
 @Injectable()
 export class BookingsService {
-  create(createBookingDto: CreateBookingDto) {
-    return 'This action adds a new booking';
-  }
+  constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
-    return `This action returns all bookings`;
+  async create(createBookingDto: CreateBookingDto): Promise<string> {
+    const userExist = await this.prisma.user.findUnique({
+      where: { id: createBookingDto.userId },
+    });
+
+    if (!userExist) throw new BadRequestException('Usuario no encotrado');
+
+    return 'This action adds a new booking';
   }
 
   findOne(id: number) {
     return `This action returns a #${id} booking`;
-  }
-
-  update(id: number, updateBookingDto: UpdateBookingDto) {
-    return `This action updates a #${id} booking`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} booking`;
   }
 }
