@@ -126,6 +126,8 @@ model Pin {
   fuel              FuelType
   drivetrain        Drivetrain?
   color             String?         @db.VarChar(40)
+  seats             Int?            @default(5)
+
 
   licensePlate      String?         @db.VarChar(20)
   vin               String?         @db.VarChar(30)

@@ -1,20 +1,35 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { FuelType, Transmission } from '@prisma/client';
 
 export class PinListItemResponseDto {
-  @ApiProperty() id: string;
-
-  @ApiProperty({ example: 'Toyota Corolla 2020' })
-  title: string;
-
-  @ApiProperty({ example: '70.00' })
-  pricePerDay: string;
+  @ApiProperty()
+  id!: string;
 
   @ApiProperty()
-  thumbnailUrl: string | null;
+  title!: string;
 
-  @ApiProperty()
-  city: string;
+  @ApiProperty({ example: '50.00' })
+  pricePerDay!: string;
 
-  @ApiProperty()
-  country: string;
+  @ApiProperty({ enum: FuelType })
+  fuel!: FuelType;
+
+  @ApiProperty({ example: 5 })
+  seats!: number;
+
+  @ApiProperty({ enum: Transmission })
+  transmission!: Transmission;
+
+  @ApiProperty({
+    example: 'Vehículo en excelente estado...',
+    nullable: true,
+    maxLength: 100,
+  })
+  description!: string | null;
+
+  @ApiProperty({
+    example: 'https://cdn.com/corolla.jpg',
+    nullable: true,
+  })
+  thumbnailUrl!: string | null;
 }
