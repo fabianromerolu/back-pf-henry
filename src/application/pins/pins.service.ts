@@ -1,4 +1,4 @@
-/* eslint-disable prettier/prettier */
+// src/application/pins/pins.service.ts
 import {
   BadRequestException,
   ForbiddenException,
@@ -6,11 +6,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/infra/prisma/prisma.service';
-import { AppRole, Prisma, VehicleStatus, User, Transmission, FuelType } from '@prisma/client';
+import { AppRole, Prisma, VehicleStatus, User } from '@prisma/client';
 import { CreatePinDto } from './dtos/create-pin.dto';
 import { UpdatePinDto } from './dtos/update-pin.dto';
 import { QueryPinsDto } from './dtos/query-pin.dto';
-import { Decimal } from '@prisma/client/runtime/library';
 
 type ListQuery = { q?: string; page?: number; limit?: number };
 
@@ -39,90 +38,72 @@ type PinWithOwnerPhotos = Prisma.PinGetPayload<{
 export class PinsService {
   constructor(private readonly prisma: PrismaService) {}
 
-async listPublic(query: QueryPinsDto) {
-  const page = Math.max(1, Number(query?.page ?? 1));
-  const limit = Math.max(1, Math.min(50, Number(query?.limit ?? 12)));
+  async listPublic(query: QueryPinsDto) {
+    const page = Math.max(1, Number(query?.page ?? 1));
+    const limit = Math.max(1, Math.min(50, Number(query?.limit ?? 12)));
 
-  const where: Prisma.PinWhereInput = {
-    status: VehicleStatus.PUBLISHED,
-    deletedAt: null,
-  };
+    const where: Prisma.PinWhereInput = {
+      status: VehicleStatus.PUBLISHED,
+      deletedAt: null,
+    };
 
-  if (query?.q?.trim()) {
-    const q = query.q.trim();
-    where.OR = [
-      { title: { contains: q, mode: 'insensitive' } },
-      { make: { contains: q, mode: 'insensitive' } },
-      { model: { contains: q, mode: 'insensitive' } },
-      { description: { contains: q, mode: 'insensitive' } },
-      { city: { contains: q, mode: 'insensitive' } },
-      { country: { contains: q, mode: 'insensitive' } },
-    ];
-  }
+    if (query?.q && query.q.trim()) {
+      const q = query.q.trim();
+      where.OR = [
+        { title: { contains: q, mode: 'insensitive' } },
+        { make: { contains: q, mode: 'insensitive' } },
+        { model: { contains: q, mode: 'insensitive' } },
+        { description: { contains: q, mode: 'insensitive' } },
+        { city: { contains: q, mode: 'insensitive' } },
+        { country: { contains: q, mode: 'insensitive' } },
+      ];
+    }
 
-  if (query.city) where.city = { contains: query.city, mode: 'insensitive' };
-  if (query.category) where.category = query.category;
+    if (query.city) where.city = { contains: query.city, mode: 'insensitive' };
 
-  const [pins, total] = await this.prisma.$transaction([
-    this.prisma.pin.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * limit,
-      take: limit,
-      select: {
-        id: true,
-        make: true,
-        model: true,
-        pricePerDay: true,
-        fuel: true,
-        seats: true,
-        transmission: true,
-        description: true,
-        photos: {
-          where: { isCover: true },
-          select: { url: true },
-          take: 1,
+    if (query.category) where.category = query.category;
+
+    const [pins, total] = await this.prisma.$transaction([
+      this.prisma.pin.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        select: {
+          id: true,
+          title: true,
+          make: true,
+          model: true,
+          year: true,
+          city: true,
+          country: true,
+          pricePerDay: true,
+          photos: {
+            where: { isCover: true },
+            select: { url: true },
+            take: 1,
+          },
         },
-      },
-    }),
+      }),
 
-    this.prisma.pin.count({ where }),
-  ]);
+      this.prisma.pin.count({ where }),
+    ]);
 
-return {
-  data: pins.map((pin: {
-    id: string;
-    make: string;
-    model: string;
-    pricePerDay: Decimal;
-    fuel: FuelType;
-    seats: number | null;
-    transmission: Transmission;
-    description: string | null;
-    photos: { url: string }[];
-  }) => ({
-    id: pin.id,
-    title: `${pin.make} ${pin.model}`,
-    pricePerDay: pin.pricePerDay?.toString(),
-    fuel: pin.fuel,
-    seats: pin.seats ?? 5,
-    transmission: pin.transmission,
-    description: pin.description
-      ? pin.description.length > 100
-        ? pin.description.slice(0, 100) + "..."
-        : pin.description
-      : null,
-    thumbnailUrl: pin.photos?.[0]?.url ?? null,
-  })),
-  page,
-  limit,
-  total,
-  hasNextPage: total > page * limit,
-};
-
-
-}
-
+    return {
+      data: pins.map((pin) => ({
+        id: pin.id,
+        title: `${pin.make} ${pin.model} ${pin.year}`,
+        pricePerDay: pin.pricePerDay.toString(),
+        thumbnailUrl: pin.photos[0]?.url ?? null,
+        city: pin.city,
+        country: pin.country,
+      })),
+      page,
+      limit,
+      total,
+      hasNextPage: total > page * limit,
+    };
+  }
 
   async getByIdPublic(id: string): Promise<PinWithOwnerPhotos> {
     const pin = await this.prisma.pin.findUnique({
@@ -218,7 +199,6 @@ return {
     }
 
     const cleanData: Prisma.PinUpdateInput = Object.fromEntries(
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       Object.entries(dto).filter(([_, v]) => v !== undefined),
     );
 
