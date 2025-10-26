@@ -1,6 +1,3 @@
-/* eslint-disable prettier/prettier */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
@@ -172,10 +169,10 @@ export class CreatePinDto {
   @ApiPropertyOptional({ example: 'No fumar. No mascotas.' })
   @IsString()
   @IsOptional()
-  // eslint-disable-next-line prettier/prettier
+
   rules?: string;
 
-  /* Descripción / fotos */
+
   @ApiPropertyOptional({ example: 'Auto cómodo, bajo consumo, ideal ciudad.' })
   @IsString()
   @IsOptional()
