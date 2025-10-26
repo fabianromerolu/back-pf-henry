@@ -8,7 +8,7 @@ import { FilesModule } from './application/files/files.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MailerModule } from './application/mailer/mailer.module';
-import { BookingsModule } from './bookings/bookings.module';
+import { BookingsModule } from './application/bookings/bookings.module';
 
 @Module({
   imports: [
