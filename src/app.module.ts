@@ -8,6 +8,7 @@ import { FilesModule } from './application/files/files.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MailerModule } from './application/mailer/mailer.module';
+import { BookingsModule } from './bookings/bookings.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { MailerModule } from './application/mailer/mailer.module';
     PinModule,
     FilesModule,
     MailerModule,
+    BookingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
