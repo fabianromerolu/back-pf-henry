@@ -35,6 +35,7 @@ import { UpdateStatusDto } from './dtos/update-status.dto';
 import { UpdatePinDto } from './dtos/update-pin.dto';
 import { PinResponseDto } from './dtos/pin-response.dto';
 import { PaginatedPinsResponseDto } from './dtos/paginated-pins-response.dto';
+import { PinDetailResponseDto } from './dtos/pin-detail-response.dto';
 
 interface RequestWithUser {
   user?: {
@@ -70,10 +71,10 @@ export class PinsController {
   @Get(':id')
   @ApiOperation({ summary: 'Get pin by id (public)' })
   @ApiParam({ name: 'id', format: 'uuid' })
-  @ApiOkResponse({ type: PinResponseDto })
-  @ApiNotFoundResponse({ description: 'Pin not found' })
+  @ApiOkResponse({ type: PinDetailResponseDto })
+  @ApiNotFoundResponse({ description: 'Pin not found or not published' })
+  @ApiBadRequestResponse({ description: 'Invalid UUID' })
   async getById(@Param('id', new ParseUUIDPipe()) id: string) {
-    // antes: this.pins.getById(id)  -> NO existe
     return this.pins.getByIdPublic(id);
   }
 
@@ -158,5 +159,11 @@ export class PinsController {
     // antes: this.pins.remove(uid, id) -> NO existe
     await this.pins.deletePin(uid, id);
     return { success: true };
+  }
+
+  @Post('seeder')
+  @ApiOperation({ summary: 'Ejecuta seeder inicial de PINS (solo DEMO)' })
+  async seedPins() {
+    return this.pins.seedPins();
   }
 }

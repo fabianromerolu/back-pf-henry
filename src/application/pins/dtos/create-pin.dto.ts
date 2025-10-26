@@ -67,7 +67,6 @@ export class CreatePinDto {
   category: VehicleCategory;
 
   @ApiProperty({ enum: Transmission })
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   @IsEnum(Transmission)
   transmission: Transmission;
 
@@ -169,9 +168,7 @@ export class CreatePinDto {
   @ApiPropertyOptional({ example: 'No fumar. No mascotas.' })
   @IsString()
   @IsOptional()
-
   rules?: string;
-
 
   @ApiPropertyOptional({ example: 'Auto cómodo, bajo consumo, ideal ciudad.' })
   @IsString()
