@@ -51,11 +51,17 @@ export class PinsService {
     const page = Math.max(1, Number(query?.page ?? 1));
     const limit = Math.max(1, Math.min(50, Number(query?.limit ?? 12)));
 
+    // 🔍 Construcción dinámica del filtro (where)
     const where: Prisma.PinWhereInput = {
-      status: VehicleStatus.PUBLISHED,
       deletedAt: null,
+      status: query.status ?? VehicleStatus.PUBLISHED,
+      ...(query.category && { category: query.category }),
+      ...(query.city && {
+        city: { contains: query.city.trim(), mode: 'insensitive' },
+      }),
     };
 
+    // 🔎 Búsqueda general (texto libre)
     if (query?.q?.trim()) {
       const q = query.q.trim();
       where.OR = [
@@ -68,9 +74,26 @@ export class PinsService {
       ];
     }
 
-    if (query.city) where.city = { contains: query.city, mode: 'insensitive' };
-    if (query.category) where.category = query.category;
+    // 💰 Filtros por rango de precios
+    if (query.priceMin || query.priceMax) {
+      where.pricePerDay = {
+        ...(query.priceMin && { gte: Number(query.priceMin) }),
+        ...(query.priceMax && { lte: Number(query.priceMax) }),
+      };
+    }
 
+    // 🚗 Filtros por año de fabricación
+    if (query.yearMin || query.yearMax) {
+      where.year = {
+        ...(query.yearMin && { gte: Number(query.yearMin) }),
+        ...(query.yearMax && { lte: Number(query.yearMax) }),
+      };
+    }
+
+    // 👤 Filtro por propietario
+    if (query.ownerId) where.ownerId = query.ownerId;
+
+    // 🔄 Ejecución en transacción: list + count
     const [pins, total] = await this.prisma.$transaction([
       this.prisma.pin.findMany({
         where,
@@ -81,6 +104,7 @@ export class PinsService {
           id: true,
           make: true,
           model: true,
+          year: true,
           pricePerDay: true,
           fuel: true,
           seats: true,
@@ -93,37 +117,26 @@ export class PinsService {
           },
         },
       }),
-
       this.prisma.pin.count({ where }),
     ]);
 
+    // 🧾 Formato de respuesta
     return {
-      data: pins.map(
-        (pin: {
-          id: string;
-          make: string;
-          model: string;
-          pricePerDay: Decimal;
-          fuel: FuelType;
-          seats: number | null;
-          transmission: Transmission;
-          description: string | null;
-          photos: { url: string }[];
-        }) => ({
-          id: pin.id,
-          title: `${pin.make} ${pin.model}`,
-          pricePerDay: pin.pricePerDay?.toString(),
-          fuel: pin.fuel,
-          seats: pin.seats ?? 5,
-          transmission: pin.transmission,
-          description: pin.description
-            ? pin.description.length > 100
-              ? pin.description.slice(0, 100) + '...'
-              : pin.description
-            : null,
-          thumbnailUrl: pin.photos?.[0]?.url ?? null,
-        }),
-      ),
+      data: pins.map((pin) => ({
+        id: pin.id,
+        title: `${pin.make} ${pin.model}`,
+        year: pin.year,
+        pricePerDay: pin.pricePerDay?.toString(),
+        fuel: pin.fuel,
+        seats: pin.seats ?? 5,
+        transmission: pin.transmission,
+        description: pin.description
+          ? pin.description.length > 100
+            ? pin.description.slice(0, 100) + '...'
+            : pin.description
+          : null,
+        thumbnailUrl: pin.photos?.[0]?.url ?? null,
+      })),
       page,
       limit,
       total,
