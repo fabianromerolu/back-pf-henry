@@ -1,117 +1,64 @@
 // src/application/mailer/mailer.service.ts
 import { Injectable } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import * as path from 'path';
 import * as fs from 'fs';
 
+
 @Injectable()
 export class MailerService {
-  private transporter: nodemailer.Transporter;
+  private resend: Resend;
   private from: string;
-  private templatesDir: string;
+  private readonly testRecipient = 'trabajofinal866@gmail.com'; // 👈 tu correo
 
   constructor() {
-    // 1) Transport
-    this.transporter = nodemailer.createTransport({
-      host: process.env.MAIL_HOST,
-      port: Number(process.env.MAIL_PORT),
-      secure: false, // STARTTLS (587)
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
-      requireTLS: true,
-    });
-
-    // 2) From
-    this.from = process.env.MAIL_FROM || `"Volantia" <${process.env.MAIL_USER}>`;
-
-    // 3) Templates dir (funciona en dev y en prod/dist)
-    const candidateDirs = [
-      // cuando compilas: dist/application/mailer/templates
-      path.resolve(__dirname, 'templates'),
-      // en dev: src/application/mailer/templates
-      path.resolve(process.cwd(), 'src', 'application', 'mailer', 'templates'),
-    ];
-    this.templatesDir = candidateDirs.find((p) => fs.existsSync(p)) || candidateDirs[0];
-
-    // 4) Registrar plugin handlebars (compatible con CJS y ESM default)
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const mod = require('nodemailer-express-handlebars');
-    const hbs = mod?.default ?? mod;
-
-    this.transporter.use(
-      'compile',
-      hbs({
-        viewEngine: {
-          extname: '.hbs',
-          layoutsDir: this.templatesDir,
-          defaultLayout: false,
-        },
-        viewPath: this.templatesDir,
-        extName: '.hbs',
-      }),
-    );
+    this.resend = new Resend(process.env.RESEND_API_KEY);
+    this.from = process.env.MAIL_FROM || 'Volantia <onboarding@resend.dev>';
   }
 
-  async sendWelcomeEmail(to: string, name?: string | null) {
+  async sendWelcomeEmail(_to: string, name?: string | null) {
     try {
-      const logoPath = path.resolve(process.cwd(), 'assets', 'volantia.png');
+      const html = fs.readFileSync(
+        path.join(process.cwd(), 'src', 'application', 'mailer', 'templates', 'welcome.hbs'),
+        'utf8',
+      )
+        .replace('{{name}}', name || '¡Bienvenido!')
+        .replace('{{actionUrl}}', process.env.FRONTEND_URL || 'http://localhost:3001')
+        .replace('{{year}}', new Date().getFullYear().toString());
 
-      await this.transporter.sendMail({
+      const data = await this.resend.emails.send({
         from: this.from,
-        to,
+        to: this.testRecipient, // 👈 siempre a tu Gmail
         subject: 'Bienvenido a Volantia 🎉',
-        template: 'welcome', // welcome.hbs
-        context: {
-          name: name || '¡Bienvenido!',
-          actionUrl: process.env.FRONTEND_URL || 'http://localhost:3001',
-          year: new Date().getFullYear(),
-        },
-        attachments: fs.existsSync(logoPath)
-          ? [
-              {
-                filename: 'volantia.png',
-                path: logoPath,
-                cid: 'volantia-logo',
-              },
-            ]
-          : [],
+        html,
       });
+
+      console.log(`✅ Welcome email enviado a ${this.testRecipient}`, data);
     } catch (err) {
-      // sin drama: loguea y sigue
-      // eslint-disable-next-line no-console
-      console.error('Error enviando welcome email:', err);
+      console.error('❌ Error enviando welcome email:', err);
     }
   }
 
-  async sendLoginEmail(to: string, name?: string | null) {
+  async sendLoginEmail(_to: string, name?: string | null) {
     try {
-      const logoPath = path.resolve(process.cwd(), 'assets', 'volantia.png');
+      const html = fs.readFileSync(
+        path.join(process.cwd(), 'src', 'application', 'mailer', 'templates', 'login.hbs'),
+        'utf8',
+      )
+        .replace('{{name}}', name || 'Usuario')
+        .replace('{{resetUrl}}', (process.env.FRONTEND_URL || 'http://localhost:3001') + '/reset-password')
+        .replace('{{year}}', new Date().getFullYear().toString());
 
-      await this.transporter.sendMail({
+      const data = await this.resend.emails.send({
         from: this.from,
-        to,
+        to: this.testRecipient, // 👈 siempre a tu Gmail
         subject: 'Nuevo inicio de sesión detectado',
-        template: 'login', // login.hbs
-        context: {
-          name: name || 'Usuario',
-          resetUrl: (process.env.FRONTEND_URL || 'http://localhost:3001') + '/reset-password',
-          year: new Date().getFullYear(),
-        },
-        attachments: fs.existsSync(logoPath)
-          ? [
-              {
-                filename: 'volantia.png',
-                path: logoPath,
-                cid: 'volantia-logo',
-              },
-            ]
-          : [],
+        html,
       });
+
+      console.log(`✅ Login email enviado a ${this.testRecipient}`, data);
     } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('Error enviando login email:', err);
+      console.error('❌ Error enviando login email:', err);
     }
   }
 }
