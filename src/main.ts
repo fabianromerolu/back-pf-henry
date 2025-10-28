@@ -75,53 +75,25 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   // 3) afterCallback: genera tu JWT, setea cookies y redirige
-  const afterCb: NonNullable<ConfigParams['afterCallback']> = async (
-    req,
-    res,
-    session,
-    state: any,
-  ) => {
-    const oidc = (req as any).oidc || {};
-    let sub: string | undefined;
-    let email: string | undefined;
-    let name: string | undefined;
+  const afterCb: NonNullable<ConfigParams['afterCallback']> = async (req, res, session, state: any) => {
+    // Express OIDC ya dejó al user en req.oidc.user desde el id_token
+    const oidcUser = (req as any).oidc?.user as { sub?: string; email?: string; name?: string } | undefined;
 
-    // ✅ 1) Intenta primero desde id_token (siempre viene con openid profile email)
-    if ((session as any)?.id_token) {
-      try {
-        const b64 = (session as any).id_token.split('.')[1];
-        const payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
-        sub = payload?.sub;
-        email = payload?.email;
-        name = payload?.name;
-      } catch (e) {
-        Logger.warn(`id_token decode failed: ${e}`);
-      }
-    }
-
-    // ✅ 2) Fallback a lo que ya trae express-openid-connect
-    if (!sub && oidc.user?.sub) {
-      ({ sub, email, name } = oidc.user as any);
-    }
-
-    // ❌ No llames fetchUserInfo; te estaba tirando invalid_token por config del tenant
-    // if (!sub && typeof oidc.fetchUserInfo === 'function') { ... }
+    const sub = oidcUser?.sub;
+    const email = oidcUser?.email;
+    const name = oidcUser?.name;
 
     if (!sub) {
       const url = new URL(`${frontBase()}/login`);
       url.searchParams.set('error', 'no_user_sub');
-      (req as any).openidState = {
-        ...(req as any).openidState,
-        returnTo: url.toString(),
-      };
+      (req as any).openidState = { ...(req as any).openidState, returnTo: url.toString() };
       return session;
     }
 
     const { user, created } = await authService.validateUser({ sub, email, name });
-    const role: AppRole =
-      (user.role as AppRole) ?? (user.isAdmin ? 'ADMIN' : 'USER');
+    const role: AppRole = (user.role as AppRole) ?? (user.isAdmin ? 'ADMIN' : 'USER');
 
-    // Emails de bienvenida/login (no bloquean)
+    // Emails (no bloquean)
     if (created) await authService.sendWelcomeForSso(user);
     else await authService.sendLoginForSso(user);
 
@@ -132,25 +104,26 @@ async function bootstrap() {
       role,
     });
 
-    // Cookie httpOnly con el JWT
+    // Cookie httpOnly con el JWT del back
     (res as any).cookie('volantia_token', token, {
       httpOnly: true,
-      sameSite: cookieSameSite(),
+      sameSite: cookieSameSite(), // 'none' en prod si puedes
       secure: isProd(),
-      maxAge: 1000 * 60 * 15, // 15 min
+      maxAge: 1000 * 60 * 15,
       path: '/',
     });
 
-    // Cookie legible por el front con el rol (opcional)
+    // Cookie legible por el front con el rol
     (res as any).cookie('volantia_role', role, {
       httpOnly: false,
       sameSite: cookieSameSite(),
       secure: isProd(),
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 días
+      maxAge: 1000 * 60 * 60 * 24 * 7,
       path: '/',
     });
 
-    const desired = toSafePath(state?.returnTo);
+    // Redirección de vuelta al front
+    const desired = toSafePath(state?.returnTo); // p.ej. "/auth/sso"
     const fallbackPath = roleDashboardPath(role, user.isAdmin);
     const path = desired && desired !== '/login' ? desired : fallbackPath;
 
@@ -158,10 +131,7 @@ async function bootstrap() {
     const returnUrl = new URL(`${frontBase()}${path}`);
     if (sendToken) returnUrl.searchParams.set('token', token);
 
-    (req as any).openidState = {
-      ...(req as any).openidState,
-      returnTo: returnUrl.toString(),
-    };
+    (req as any).openidState = { ...(req as any).openidState, returnTo: returnUrl.toString() };
     return session;
   };
 
