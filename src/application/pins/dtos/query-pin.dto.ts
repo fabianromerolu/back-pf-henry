@@ -1,4 +1,4 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEnum,
   IsInt,
@@ -10,58 +10,73 @@ import {
   Min,
 } from 'class-validator';
 import { VehicleCategory, VehicleStatus } from '@prisma/client';
+import { Type } from 'class-transformer';
 
 export class QueryPinsDto {
-  @ApiPropertyOptional({ example: 1 })
+  @ApiProperty({ example: 1, description: 'Page number (pagination)' })
+  @Type(() => Number)
+  @IsOptional()
   @IsInt()
   @Min(1)
+  page: number = 1;
+
+  @ApiProperty({ example: 12, description: 'Items per page (pagination)' })
+  @Type(() => Number)
   @IsOptional()
-  page?: number;
-  @ApiPropertyOptional({ example: 20 })
   @IsInt()
   @Min(1)
   @Max(50)
-  @IsOptional()
-  limit?: number;
+  limit: number = 12;
 
-  @ApiPropertyOptional({ example: 'Montería' })
+  @ApiPropertyOptional({ description: 'Filter by city' })
+  @IsOptional()
   @IsString()
-  @IsOptional()
   city?: string;
-  @ApiPropertyOptional({ enum: VehicleCategory })
+
+  @ApiPropertyOptional({
+    enum: VehicleCategory,
+    description: 'Filter by vehicle category',
+  })
+  @IsOptional()
   @IsEnum(VehicleCategory)
-  @IsOptional()
   category?: VehicleCategory;
-  @ApiPropertyOptional({ enum: VehicleStatus })
-  @IsEnum(VehicleStatus)
+
+  @ApiPropertyOptional({ enum: VehicleStatus, description: 'Filter by status' })
   @IsOptional()
+  @IsEnum(VehicleStatus)
   status?: VehicleStatus;
 
-  @ApiPropertyOptional({ example: 'corolla' })
-  @IsString()
+  @ApiPropertyOptional({ description: 'Search keyword (title, model...)' })
   @IsOptional()
+  @IsString()
   q?: string;
 
-  @ApiPropertyOptional({ example: 10 })
-  @IsNumber()
+  @ApiPropertyOptional({ description: 'Minimum rental price per day' })
+  @Type(() => Number)
   @IsOptional()
+  @IsNumber()
   priceMin?: number;
-  @ApiPropertyOptional({ example: 200 })
-  @IsNumber()
+
+  @ApiPropertyOptional({ description: 'Maximum rental price per day' })
+  @Type(() => Number)
   @IsOptional()
+  @IsNumber()
   priceMax?: number;
 
-  @ApiPropertyOptional({ example: 2015 })
-  @IsInt()
+  @ApiPropertyOptional({ description: 'Minimum manufacturing year' })
+  @Type(() => Number)
   @IsOptional()
+  @IsInt()
   yearMin?: number;
-  @ApiPropertyOptional({ example: 2024 })
-  @IsInt()
+
+  @ApiPropertyOptional({ description: 'Maximum manufacturing year' })
+  @Type(() => Number)
   @IsOptional()
+  @IsInt()
   yearMax?: number;
 
-  @ApiPropertyOptional({ format: 'uuid' })
-  @IsUUID(4)
+  @ApiPropertyOptional({ format: 'uuid', description: 'Filter by owner' })
   @IsOptional()
+  @IsUUID(4)
   ownerId?: string;
 }

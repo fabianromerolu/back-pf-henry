@@ -1,3 +1,4 @@
+// src/application/mailer/mailer.service.ts
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import hbs from 'nodemailer-express-handlebars';
@@ -37,8 +38,8 @@ export class MailerService {
     this.from = `"Volantia" <${process.env.MAIL_USER}>`;
   }
 
-  async sendWelcomeEmail(to: string, name?: string | null) {
-    await this.transporter.sendMail({
+  sendWelcomeEmail(to: string, name?: string | null) {
+    this.transporter.sendMail({
       from: this.from,
       to,
       subject: 'Bienvenido a Volantia 🎉',
@@ -55,11 +56,13 @@ export class MailerService {
           cid: 'volantia-logo',
         },
       ],
+    }).catch(err => {
+      console.error('Error enviando welcome email:', err);
     });
   }
 
-  async sendLoginEmail(to: string, name?: string | null) {
-    await this.transporter.sendMail({
+  sendLoginEmail(to: string, name?: string | null) {
+    this.transporter.sendMail({
       from: this.from,
       to,
       subject: 'Nuevo inicio de sesión detectado',
@@ -76,6 +79,8 @@ export class MailerService {
           cid: 'volantia-logo',
         },
       ],
+    }).catch(err => {
+      console.error('Error enviando login email:', err);
     });
   }
 }
