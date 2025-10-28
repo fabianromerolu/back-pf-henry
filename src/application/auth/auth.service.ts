@@ -85,26 +85,39 @@ export class AuthService {
       const decoded = await this.jwtService.verifyAsync<JwtPayload>(token, {
         secret: process.env.JWT_SECRET,
       });
-      if (!decoded.sub || !decoded.email)
-        throw new Error('Invalid token structure');
-      if (decoded.iss !== `${process.env.AUTH0_BASE_URL}/`)
+      if (!decoded.sub) throw new Error('Invalid token structure');
+
+      const expectedIss = (process.env.AUTH0_ISSUER_BASE_URL || '').replace(/\/+$/, '');
+      const gotIss = (decoded.iss || '').replace(/\/+$/, '');
+      if (expectedIss && gotIss !== expectedIss) {
         throw new Error('Invalid token issuer');
+      }
 
       const expectedAud = process.env.AUTH0_AUDIENCE;
-      if (Array.isArray(decoded.aud)) {
-        if (expectedAud && !decoded.aud.includes(expectedAud))
-          throw new Error('Invalid token audience');
+      if (expectedAud) {
+        if (Array.isArray(decoded.aud)) {
+          if (!decoded.aud.includes(expectedAud)) throw new Error('Invalid token audience');
+        } else {
+          if (decoded.aud !== expectedAud) throw new Error('Invalid token audience');
+        }
       } else {
-        const valid = expectedAud
-          ? decoded.aud === expectedAud
-          : decoded.aud === process.env.AUTH0_CLIENT_ID;
-        if (!valid) throw new Error('Invalid token audience');
+        // sin audience, acepta client_id como audiencia
+        const clientId = process.env.AUTH0_CLIENT_ID;
+        if (clientId) {
+          if (Array.isArray(decoded.aud)) {
+            if (!decoded.aud.includes(clientId)) throw new Error('Invalid token audience');
+          } else if (decoded.aud !== clientId) {
+            throw new Error('Invalid token audience');
+          }
+        }
       }
+
       return decoded;
     } catch {
       throw new UnauthorizedException('Invalid token');
     }
   }
+
 
   private sanitizeRoleForRegistration(
     requested?: string | null,
@@ -281,15 +294,13 @@ export class AuthService {
     refreshToken: string,
   ): Promise<{ accessToken: string; refreshToken: string }> {
     try {
-      const res = await axios.post(
-        `${process.env.AUTH0_BASE_URL}/oauth/token`,
-        {
-          grant_type: 'refresh_token',
-          client_id: process.env.AUTH0_CLIENT_ID,
-          client_secret: process.env.AUTH0_CLIENT_SECRET,
-          refresh_token: refreshToken,
-        },
-      );
+      const base = (process.env.AUTH0_ISSUER_BASE_URL || '').replace(/\/+$/, '');
+      const res = await axios.post(`${base}/oauth/token`, {
+        grant_type: 'refresh_token',
+        client_id: process.env.AUTH0_CLIENT_ID,
+        client_secret: process.env.AUTH0_CLIENT_SECRET,
+        refresh_token: refreshToken,
+      });
       return {
         accessToken: res.data.access_token,
         refreshToken: res.data.refresh_token || refreshToken,
@@ -301,7 +312,8 @@ export class AuthService {
 
   async revokeToken(refreshToken: string): Promise<void> {
     try {
-      await axios.post(`${process.env.AUTH0_BASE_URL}/oauth/revoke`, {
+      const base = (process.env.AUTH0_ISSUER_BASE_URL || '').replace(/\/+$/, '');
+      await axios.post(`${base}/oauth/revoke`, {
         client_id: process.env.AUTH0_CLIENT_ID,
         client_secret: process.env.AUTH0_CLIENT_SECRET,
         token: refreshToken,
@@ -310,4 +322,5 @@ export class AuthService {
       throw new Error('The token could not be revoked');
     }
   }
+
 }

@@ -9,36 +9,43 @@ import * as cookieParser from 'cookie-parser';
 import { AuthService } from './application/auth/auth.service';
 import { config as oidcConfig } from './application/auth/config/auth0.config';
 
+function isProd() {
+  return process.env.NODE_ENV === 'production';
+}
+function cookieSameSite(): 'lax' | 'none' {
+  return process.env.CROSS_SITE_COOKIES === '1' ? 'none' : 'lax';
+}
 function frontBase(): string {
-  return (
+  const base =
     process.env.FRONTEND_URL ||
     process.env.FRONTEND_REDIRECT ||
-    'http://localhost:3001'
-  ).replace(/\/+$/, '');
+    (isProd() ? 'https://front-pf-henry-bb42.vercel.app' : 'http://localhost:3001');
+  return base.replace(/\/+$/, '');
 }
-
 function parseOrigins(env?: string): string[] {
   if (!env) return ['http://localhost:3001'];
-  return env
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
+  return env.split(',').map((s) => s.trim()).filter(Boolean);
 }
-
 type AppRole = 'ADMIN' | 'RENTER' | 'USER';
-
 function roleDashboardPath(role?: string, isAdmin?: boolean): string {
   if (isAdmin || role === 'ADMIN') return '/dashboard/admin';
   if (role === 'RENTER') return '/dashboard/renter';
   return '/dashboard';
+}
+function toSafePath(urlLike?: string): string | null {
+  if (!urlLike) return null;
+  try {
+    const u = new URL(urlLike);
+    return u.pathname + u.search + u.hash;
+  } catch {
+    return urlLike.startsWith('/') ? urlLike : null;
+  }
 }
 
 async function bootstrap() {
   // 1) rawBody nativo (para verificar firmas de webhooks)
   const app = await NestFactory.create(AppModule, { rawBody: true });
   const authService = app.get(AuthService);
-
-  // app.use(cookieParser()); // opcional
 
   // 2) CORS configurable por ENV
   const origins = parseOrigins(process.env.CORS_ORIGINS);
@@ -66,19 +73,8 @@ async function bootstrap() {
 
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  // app.setGlobalPrefix('api'); // opcional
 
-  const toSafePath = (urlLike?: string): string | null => {
-    if (!urlLike) return null;
-    try {
-      const u = new URL(urlLike);
-      return u.pathname + u.search + u.hash;
-    } catch {
-      return urlLike.startsWith('/') ? urlLike : null;
-    }
-  };
-
-  // 3) Evitar token en query → set cookie httpOnly (afterCallback de Auth0)
+  // 3) afterCallback: genera tu JWT, setea cookies y redirige
   const afterCb: NonNullable<ConfigParams['afterCallback']> = async (
     req,
     res,
@@ -125,20 +121,13 @@ async function bootstrap() {
       return session;
     }
 
-    const { user, created } = await authService.validateUser({
-      sub,
-      email,
-      name,
-    });
+    const { user, created } = await authService.validateUser({ sub, email, name });
     const role: AppRole =
       (user.role as AppRole) ?? (user.isAdmin ? 'ADMIN' : 'USER');
 
-    // Envía correo (no bloquea si falla)
-    if (created) {
-      await authService.sendWelcomeForSso(user);
-    } else {
-      await authService.sendLoginForSso(user);
-    }
+    // Emails de bienvenida/login (no bloquean)
+    if (created) await authService.sendWelcomeForSso(user);
+    else await authService.sendLoginForSso(user);
 
     const token = await authService.generateToken({
       sub: user.id,
@@ -147,11 +136,11 @@ async function bootstrap() {
       role,
     });
 
-    // Cookie segura con el JWT
+    // Cookie httpOnly con el JWT
     (res as any).cookie('volantia_token', token, {
       httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      sameSite: cookieSameSite(),
+      secure: isProd(),
       maxAge: 1000 * 60 * 15, // 15 min
       path: '/',
     });
@@ -159,8 +148,8 @@ async function bootstrap() {
     // Cookie legible por el front con el rol (opcional)
     (res as any).cookie('volantia_role', role, {
       httpOnly: false,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      sameSite: cookieSameSite(),
+      secure: isProd(),
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7 días
       path: '/',
     });
@@ -169,15 +158,18 @@ async function bootstrap() {
     const fallbackPath = roleDashboardPath(role, user.isAdmin);
     const path = desired && desired !== '/login' ? desired : fallbackPath;
 
+    const sendToken = process.env.SEND_TOKEN_IN_QUERY === '1';
+    const returnUrl = new URL(`${frontBase()}${path}`);
+    if (sendToken) returnUrl.searchParams.set('token', token);
+
     (req as any).openidState = {
       ...(req as any).openidState,
-      returnTo: `${frontBase()}${path}`, // sin token en la URL
+      returnTo: returnUrl.toString(),
     };
     return session;
   };
 
-  // 3.1) Montar Auth0 OIDC (Universal Login) en Express
-  // Nota: casteamos a any para evitar roces de tipos si la versión de tipos difiere.
+  // 3.1) Montar Auth0 OIDC (Universal Login)
   app.use(auth({ ...(oidcConfig as any), afterCallback: afterCb } as any));
 
   // 4) Swagger
@@ -195,7 +187,7 @@ async function bootstrap() {
     customSiteTitle: 'Volantia API Docs',
   });
 
-  // 5) Producción detrás de proxy (cookies secure)
+  // 5) Proxy (cookies secure)
   if (process.env.TRUST_PROXY === '1') {
     // @ts-ignore
     app.getHttpAdapter().getInstance().set('trust proxy', 1);
@@ -204,7 +196,6 @@ async function bootstrap() {
   const port = Number(process.env.PORT ?? 3000);
   await app.listen(port, '0.0.0.0');
 
-  // Forzar log con "localhost" (en vez de 127.0.0.1/::1)
   const hostLog = process.env.SWAGGER_HOST ?? 'localhost';
   Logger.log(`📚 Swagger: http://${hostLog}:${port}/${docsPath}`);
 }
