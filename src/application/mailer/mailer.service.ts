@@ -4,6 +4,7 @@ import { Resend } from 'resend';
 import * as path from 'path';
 import * as fs from 'fs';
 
+
 @Injectable()
 export class MailerService {
   private resend: Resend;
