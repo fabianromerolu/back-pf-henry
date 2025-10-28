@@ -1,7 +1,7 @@
-import { Decimal } from '@prisma/client/runtime/library';
+import { Prisma } from '@prisma/client';
 
 export interface price {
-  pricePerHour: Decimal;
-  pricePerDay: Decimal;
-  pricePerWeek: Decimal;
+  pricePerHour: Prisma.Decimal | number;
+  pricePerDay: Prisma.Decimal | number;
+  pricePerWeek: Prisma.Decimal | number;
 }

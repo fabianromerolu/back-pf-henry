@@ -19,10 +19,12 @@ export function priceCalculator(
 
   const totalHours = Math.floor(remainingAfterDays / MS_PER_HOUR);
 
+  const weekPrice = Number(price.pricePerWeek);
+  const dayPrice = Number(price.pricePerDay);
+  const hourPrice = Number(price.pricePerHour);
+
   const TotalPrice =
-    totalWeeks * price.pricePerWeek +
-    totalDays * price.pricePerDay +
-    totalHours * price.pricePerHour;
+    totalWeeks * weekPrice + totalDays * dayPrice + totalHours * hourPrice;
 
   return TotalPrice;
 }
