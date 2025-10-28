@@ -4,12 +4,13 @@ import { PrismaService } from 'src/infra/prisma/prisma.service';
 import { priceCalculator } from 'src/utils/ordersFunctions/ordersFunction';
 import { price } from 'src/utils/ordersFunctions/ordersInterface';
 import { VehicleStatus } from '@prisma/client';
+import { bookingDto } from './dto/booking.dto';
 
 @Injectable()
 export class BookingsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createBooking: CreateBookingDto): Promise<string> {
+  async create(createBooking: CreateBookingDto): Promise<bookingDto> {
     const userExist = await this.prisma.user.findUnique({
       where: { id: createBooking.userId },
     });
