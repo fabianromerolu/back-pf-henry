@@ -86,20 +86,8 @@ async function bootstrap() {
     let email: string | undefined;
     let name: string | undefined;
 
-    if (oidc.user?.sub) ({ sub, email, name } = oidc.user as any);
-
-    if (!sub && typeof oidc.fetchUserInfo === 'function') {
-      try {
-        const ui = await oidc.fetchUserInfo();
-        sub = ui?.sub;
-        email = ui?.email;
-        name = ui?.name;
-      } catch (e) {
-        Logger.warn(`fetchUserInfo failed: ${e}`);
-      }
-    }
-
-    if (!sub && (session as any)?.id_token) {
+    // ✅ 1) Intenta primero desde id_token (siempre viene con openid profile email)
+    if ((session as any)?.id_token) {
       try {
         const b64 = (session as any).id_token.split('.')[1];
         const payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
@@ -110,6 +98,14 @@ async function bootstrap() {
         Logger.warn(`id_token decode failed: ${e}`);
       }
     }
+
+    // ✅ 2) Fallback a lo que ya trae express-openid-connect
+    if (!sub && oidc.user?.sub) {
+      ({ sub, email, name } = oidc.user as any);
+    }
+
+    // ❌ No llames fetchUserInfo; te estaba tirando invalid_token por config del tenant
+    // if (!sub && typeof oidc.fetchUserInfo === 'function') { ... }
 
     if (!sub) {
       const url = new URL(`${frontBase()}/login`);
