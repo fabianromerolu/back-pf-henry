@@ -1,4 +1,3 @@
-// src/application/auth/config/auth0.config.ts
 import { config as dotenvConfig } from 'dotenv';
 import type { ConfigParams } from 'express-openid-connect';
 
@@ -24,8 +23,9 @@ if (!issuerBase) {
   throw new Error('AUTH0_ISSUER_BASE_URL es obligatorio (dominio raíz de tu tenant)');
 }
 
-const sameSite =
-  process.env.CROSS_SITE_COOKIES === '1' ? ('none' as const) : ('lax' as const);
+/** 👇 OIDC quiere "Lax" | "Strict" | "None" (con mayúscula) */
+const sameSite: 'Lax' | 'None' =
+  process.env.CROSS_SITE_COOKIES === '1' ? 'None' : 'Lax';
 
 export const config: ConfigParams = {
   authRequired: false,
@@ -38,8 +38,7 @@ export const config: ConfigParams = {
   authorizationParams: {
     response_type: 'code',
     scope: 'openid profile email',
-    // audience opcional si usas APIs de Auth0
-    // audience: process.env.AUTH0_AUDIENCE,
+    // audience: process.env.AUTH0_AUDIENCE, // descomenta si realmente usas API
   },
   routes: {
     login: '/login',
@@ -49,7 +48,7 @@ export const config: ConfigParams = {
     rolling: true,
     rollingDuration: 60 * 60 * 24 * 7,
     cookie: {
-      sameSite,                             // 'none' en cross-site
+      sameSite,                             // <<— ahora válido para la lib
       secure: process.env.NODE_ENV === 'production',
     },
   },
