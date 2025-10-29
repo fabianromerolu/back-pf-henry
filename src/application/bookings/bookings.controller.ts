@@ -8,8 +8,6 @@ import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
-  //@UseGuards(AnyJwtGuard)
-  //@ApiBearerAuth()
   @ApiOperation({ summary: 'Create new Order' })
   @Post()
   create(@Body() createBookingDto: CreateBookingDto) {
