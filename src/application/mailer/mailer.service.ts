@@ -1,86 +1,64 @@
 // src/application/mailer/mailer.service.ts
 import { Injectable } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
-import hbs from 'nodemailer-express-handlebars';
+import { Resend } from 'resend';
 import * as path from 'path';
+import * as fs from 'fs';
+
 
 @Injectable()
 export class MailerService {
-  private transporter: nodemailer.Transporter;
+  private resend: Resend;
   private from: string;
+  private readonly testRecipient = 'trabajofinal866@gmail.com'; // 👈 tu correo
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: process.env.MAIL_HOST,
-      port: Number(process.env.MAIL_PORT),
-      secure: false, // Gmail en 587 usa STARTTLS
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
-      requireTLS: true,
-    });
-
-    // Configuración de Handlebars
-    this.transporter.use(
-      'compile',
-      hbs({
-        viewEngine: {
-          extname: '.hbs',
-          layoutsDir: path.join(process.cwd(), 'src', 'application', 'mailer', 'templates'),
-          defaultLayout: false,
-        },
-        viewPath: path.join(process.cwd(), 'src', 'application', 'mailer', 'templates'),
-        extName: '.hbs',
-      }),
-    );
-
-    this.from = `"Volantia" <${process.env.MAIL_USER}>`;
+    this.resend = new Resend(process.env.RESEND_API_KEY);
+    this.from = process.env.MAIL_FROM || 'Volantia <onboarding@resend.dev>';
   }
 
-  sendWelcomeEmail(to: string, name?: string | null) {
-    this.transporter.sendMail({
-      from: this.from,
-      to,
-      subject: 'Bienvenido a Volantia 🎉',
-      template: 'welcome', // usa welcome.hbs
-      context: {
-        name: name || '¡Bienvenido!',
-        actionUrl: process.env.FRONTEND_URL || 'http://localhost:3001',
-        year: new Date().getFullYear(),
-      },
-      attachments: [
-        {
-          filename: 'volantia.png',
-          path: path.join(process.cwd(), 'assets', 'volantia.png'),
-          cid: 'volantia-logo',
-        },
-      ],
-    }).catch(err => {
-      console.error('Error enviando welcome email:', err);
-    });
+  async sendWelcomeEmail(_to: string, name?: string | null) {
+    try {
+      const html = fs.readFileSync(
+        path.join(process.cwd(), 'src', 'application', 'mailer', 'templates', 'welcome.hbs'),
+        'utf8',
+      )
+        .replace('{{name}}', name || '¡Bienvenido!')
+        .replace('{{actionUrl}}', process.env.FRONTEND_URL || 'http://localhost:3001')
+        .replace('{{year}}', new Date().getFullYear().toString());
+
+      const data = await this.resend.emails.send({
+        from: this.from,
+        to: this.testRecipient, // 👈 siempre a tu Gmail
+        subject: 'Bienvenido a Volantia 🎉',
+        html,
+      });
+
+      console.log(`✅ Welcome email enviado a ${this.testRecipient}`, data);
+    } catch (err) {
+      console.error('❌ Error enviando welcome email:', err);
+    }
   }
 
-  sendLoginEmail(to: string, name?: string | null) {
-    this.transporter.sendMail({
-      from: this.from,
-      to,
-      subject: 'Nuevo inicio de sesión detectado',
-      template: 'login', // usa login.hbs
-      context: {
-        name: name || 'Usuario',
-        resetUrl: (process.env.FRONTEND_URL || 'http://localhost:3001') + '/reset-password',
-        year: new Date().getFullYear(),
-      },
-      attachments: [
-        {
-          filename: 'volantia.png',
-          path: path.join(process.cwd(), 'assets', 'volantia.png'),
-          cid: 'volantia-logo',
-        },
-      ],
-    }).catch(err => {
-      console.error('Error enviando login email:', err);
-    });
+  async sendLoginEmail(_to: string, name?: string | null) {
+    try {
+      const html = fs.readFileSync(
+        path.join(process.cwd(), 'src', 'application', 'mailer', 'templates', 'login.hbs'),
+        'utf8',
+      )
+        .replace('{{name}}', name || 'Usuario')
+        .replace('{{resetUrl}}', (process.env.FRONTEND_URL || 'http://localhost:3001') + '/reset-password')
+        .replace('{{year}}', new Date().getFullYear().toString());
+
+      const data = await this.resend.emails.send({
+        from: this.from,
+        to: this.testRecipient, // 👈 siempre a tu Gmail
+        subject: 'Nuevo inicio de sesión detectado',
+        html,
+      });
+
+      console.log(`✅ Login email enviado a ${this.testRecipient}`, data);
+    } catch (err) {
+      console.error('❌ Error enviando login email:', err);
+    }
   }
 }

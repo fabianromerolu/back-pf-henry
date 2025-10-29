@@ -9,36 +9,43 @@ import * as cookieParser from 'cookie-parser';
 import { AuthService } from './application/auth/auth.service';
 import { config as oidcConfig } from './application/auth/config/auth0.config';
 
+function isProd() {
+  return process.env.NODE_ENV === 'production';
+}
+function cookieSameSite(): 'lax' | 'none' {
+  return process.env.CROSS_SITE_COOKIES === '1' ? 'none' : 'lax';
+}
 function frontBase(): string {
-  return (
+  const base =
     process.env.FRONTEND_URL ||
     process.env.FRONTEND_REDIRECT ||
-    'http://localhost:3001'
-  ).replace(/\/+$/, '');
+    (isProd() ? 'https://front-pf-henry-bb42.vercel.app' : 'http://localhost:3001');
+  return base.replace(/\/+$/, '');
 }
-
 function parseOrigins(env?: string): string[] {
   if (!env) return ['http://localhost:3001'];
-  return env
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
+  return env.split(',').map((s) => s.trim()).filter(Boolean);
 }
-
 type AppRole = 'ADMIN' | 'RENTER' | 'USER';
-
 function roleDashboardPath(role?: string, isAdmin?: boolean): string {
   if (isAdmin || role === 'ADMIN') return '/dashboard/admin';
   if (role === 'RENTER') return '/dashboard/renter';
   return '/dashboard';
+}
+function toSafePath(urlLike?: string): string | null {
+  if (!urlLike) return null;
+  try {
+    const u = new URL(urlLike);
+    return u.pathname + u.search + u.hash;
+  } catch {
+    return urlLike.startsWith('/') ? urlLike : null;
+  }
 }
 
 async function bootstrap() {
   // 1) rawBody nativo (para verificar firmas de webhooks)
   const app = await NestFactory.create(AppModule, { rawBody: true });
   const authService = app.get(AuthService);
-
-  // app.use(cookieParser()); // opcional
 
   // 2) CORS configurable por ENV
   const origins = parseOrigins(process.env.CORS_ORIGINS);
@@ -66,79 +73,29 @@ async function bootstrap() {
 
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  // app.setGlobalPrefix('api'); // opcional
 
-  const toSafePath = (urlLike?: string): string | null => {
-    if (!urlLike) return null;
-    try {
-      const u = new URL(urlLike);
-      return u.pathname + u.search + u.hash;
-    } catch {
-      return urlLike.startsWith('/') ? urlLike : null;
-    }
-  };
+  // 3) afterCallback: genera tu JWT, setea cookies y redirige
+  const afterCb: NonNullable<ConfigParams['afterCallback']> = async (req, res, session, state: any) => {
+    // Express OIDC ya dejó al user en req.oidc.user desde el id_token
+    const oidcUser = (req as any).oidc?.user as { sub?: string; email?: string; name?: string } | undefined;
 
-  // 3) Evitar token en query → set cookie httpOnly (afterCallback de Auth0)
-  const afterCb: NonNullable<ConfigParams['afterCallback']> = async (
-    req,
-    res,
-    session,
-    state: any,
-  ) => {
-    const oidc = (req as any).oidc || {};
-    let sub: string | undefined;
-    let email: string | undefined;
-    let name: string | undefined;
-
-    if (oidc.user?.sub) ({ sub, email, name } = oidc.user as any);
-
-    if (!sub && typeof oidc.fetchUserInfo === 'function') {
-      try {
-        const ui = await oidc.fetchUserInfo();
-        sub = ui?.sub;
-        email = ui?.email;
-        name = ui?.name;
-      } catch (e) {
-        Logger.warn(`fetchUserInfo failed: ${e}`);
-      }
-    }
-
-    if (!sub && (session as any)?.id_token) {
-      try {
-        const b64 = (session as any).id_token.split('.')[1];
-        const payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
-        sub = payload?.sub;
-        email = payload?.email;
-        name = payload?.name;
-      } catch (e) {
-        Logger.warn(`id_token decode failed: ${e}`);
-      }
-    }
+    const sub = oidcUser?.sub;
+    const email = oidcUser?.email;
+    const name = oidcUser?.name;
 
     if (!sub) {
       const url = new URL(`${frontBase()}/login`);
       url.searchParams.set('error', 'no_user_sub');
-      (req as any).openidState = {
-        ...(req as any).openidState,
-        returnTo: url.toString(),
-      };
+      (req as any).openidState = { ...(req as any).openidState, returnTo: url.toString() };
       return session;
     }
 
-    const { user, created } = await authService.validateUser({
-      sub,
-      email,
-      name,
-    });
-    const role: AppRole =
-      (user.role as AppRole) ?? (user.isAdmin ? 'ADMIN' : 'USER');
+    const { user, created } = await authService.validateUser({ sub, email, name });
+    const role: AppRole = (user.role as AppRole) ?? (user.isAdmin ? 'ADMIN' : 'USER');
 
-    // Envía correo (no bloquea si falla)
-    if (created) {
-      await authService.sendWelcomeForSso(user);
-    } else {
-      await authService.sendLoginForSso(user);
-    }
+    // Emails (no bloquean)
+    if (created) await authService.sendWelcomeForSso(user);
+    else await authService.sendLoginForSso(user);
 
     const token = await authService.generateToken({
       sub: user.id,
@@ -147,37 +104,38 @@ async function bootstrap() {
       role,
     });
 
-    // Cookie segura con el JWT
+    // Cookie httpOnly con el JWT del back
     (res as any).cookie('volantia_token', token, {
       httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 1000 * 60 * 15, // 15 min
+      sameSite: cookieSameSite(), // 'none' en prod si puedes
+      secure: isProd(),
+      maxAge: 1000 * 60 * 15,
       path: '/',
     });
 
-    // Cookie legible por el front con el rol (opcional)
+    // Cookie legible por el front con el rol
     (res as any).cookie('volantia_role', role, {
       httpOnly: false,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 días
+      sameSite: cookieSameSite(),
+      secure: isProd(),
+      maxAge: 1000 * 60 * 60 * 24 * 7,
       path: '/',
     });
 
-    const desired = toSafePath(state?.returnTo);
+    // Redirección de vuelta al front
+    const desired = toSafePath(state?.returnTo); // p.ej. "/auth/sso"
     const fallbackPath = roleDashboardPath(role, user.isAdmin);
     const path = desired && desired !== '/login' ? desired : fallbackPath;
 
-    (req as any).openidState = {
-      ...(req as any).openidState,
-      returnTo: `${frontBase()}${path}`, // sin token en la URL
-    };
+    const sendToken = process.env.SEND_TOKEN_IN_QUERY === '1';
+    const returnUrl = new URL(`${frontBase()}${path}`);
+    if (sendToken) returnUrl.searchParams.set('token', token);
+
+    (req as any).openidState = { ...(req as any).openidState, returnTo: returnUrl.toString() };
     return session;
   };
 
-  // 3.1) Montar Auth0 OIDC (Universal Login) en Express
-  // Nota: casteamos a any para evitar roces de tipos si la versión de tipos difiere.
+  // 3.1) Montar Auth0 OIDC (Universal Login)
   app.use(auth({ ...(oidcConfig as any), afterCallback: afterCb } as any));
 
   // 4) Swagger
@@ -195,7 +153,7 @@ async function bootstrap() {
     customSiteTitle: 'Volantia API Docs',
   });
 
-  // 5) Producción detrás de proxy (cookies secure)
+  // 5) Proxy (cookies secure)
   if (process.env.TRUST_PROXY === '1') {
     // @ts-ignore
     app.getHttpAdapter().getInstance().set('trust proxy', 1);
@@ -204,7 +162,6 @@ async function bootstrap() {
   const port = Number(process.env.PORT ?? 3000);
   await app.listen(port, '0.0.0.0');
 
-  // Forzar log con "localhost" (en vez de 127.0.0.1/::1)
   const hostLog = process.env.SWAGGER_HOST ?? 'localhost';
   Logger.log(`📚 Swagger: http://${hostLog}:${port}/${docsPath}`);
 }
