@@ -28,7 +28,7 @@ export class BookingsService {
       where: { id: createBooking.pinId },
     });
     if (!vehicleExist) throw new BadRequestException('Vehiculo no encotrado');
-    if (vehicleExist.status !== VehicleStatus.DRAFT) {
+    if (vehicleExist.status !== VehicleStatus.PUBLISHED) {
       throw new BadRequestException('El vehículo no está disponible');
     }
 
