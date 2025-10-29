@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { PrismaService } from 'src/infra/prisma/prisma.service';
 import { priceCalculator } from 'src/utils/ordersFunctions/ordersFunction';
@@ -10,9 +14,12 @@ import { bookingDto } from './dto/booking.dto';
 export class BookingsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createBooking: CreateBookingDto): Promise<bookingDto> {
+  async create(
+    createBooking: CreateBookingDto,
+    userId: string,
+  ): Promise<bookingDto> {
     const userExist = await this.prisma.user.findUnique({
-      where: { id: createBooking.userId },
+      where: { id: userId },
     });
 
     if (!userExist) throw new BadRequestException('Usuario no encotrado');
@@ -21,15 +28,18 @@ export class BookingsService {
       where: { id: createBooking.pinId },
     });
     if (!vehicleExist) throw new BadRequestException('Vehiculo no encotrado');
+    if (vehicleExist.status !== VehicleStatus.DRAFT) {
+      throw new BadRequestException('El vehículo no está disponible');
+    }
 
     const prices: price = {
       pricePerDay: vehicleExist.pricePerDay,
       pricePerHour: vehicleExist.pricePerHour,
       pricePerWeek: vehicleExist.pricePerWeek,
     };
-    const newOrder = this.prisma.bookings.create({
+    const newOrder = await this.prisma.bookings.create({
       data: {
-        userId: userExist.id,
+        userId: userId,
         startDate: createBooking.start_date,
         endDate: createBooking.end_date,
         pinId: vehicleExist.id,
@@ -53,7 +63,28 @@ export class BookingsService {
     return newOrder;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} booking`;
+  async findOne(bookingId: string, userId: string): Promise<bookingDto> {
+    const booking = await this.prisma.bookings.findFirst({
+      where: {
+        id: bookingId,
+        userId: userId,
+      },
+      include: {
+        pin: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Reserva no encontrada o acceso denegado');
+    }
+
+    return booking;
   }
 }
