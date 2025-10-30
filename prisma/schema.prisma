@@ -206,6 +206,9 @@ model Bookings {
   status       BookingsStatus  @default(active)
   totalPrice   Decimal         @db.Decimal(10, 2)
 
+  paymentStatus  String?   @default("UNPAID")
+  paymentId      String?
+
   createdAt    DateTime        @default(now()) @db.Timestamptz(6)
   updateAt     DateTime?       @db.Timestamptz(6)
   deletedAt    DateTime?       @db.Timestamptz(6)
