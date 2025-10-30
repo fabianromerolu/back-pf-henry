@@ -17,6 +17,7 @@ enum UserStatus {
 enum BookingsStatus {
   active
   suspended
+  complete
 }
 
 enum AppRole {

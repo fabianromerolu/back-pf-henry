@@ -8,7 +8,7 @@ import { PrismaService } from 'src/infra/prisma/prisma.service';
 import { priceCalculator } from 'src/utils/ordersFunctions/ordersFunction';
 import { price } from 'src/utils/ordersFunctions/ordersInterface';
 import { VehicleStatus } from '@prisma/client';
-import { bookingDto } from './dto/booking.dto';
+import { bookingDto, BookingsResponseDto } from './dto/booking.dto';
 
 @Injectable()
 export class BookingsService {
@@ -61,6 +61,45 @@ export class BookingsService {
       },
     });
     return newOrder;
+  }
+
+  async findAllByUser(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<BookingsResponseDto> {
+    const skip = (page - 1) * limit;
+
+    const [bookings, total] = await Promise.all([
+      this.prisma.bookings.findMany({
+        where: { userId },
+        include: {
+          pin: {
+            select: {
+              model: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.bookings.count({ where: { userId } }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    return {
+      data: bookings,
+      total,
+      page,
+      limit,
+      totalPages,
+      hasNext,
+      hasPrev,
+    };
   }
 
   async findOne(bookingId: string, userId: string): Promise<bookingDto> {
