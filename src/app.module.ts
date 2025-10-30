@@ -9,6 +9,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MailerModule } from './application/mailer/mailer.module';
 import { BookingsModule } from './application/bookings/bookings.module';
+import { PaymentsModule } from './application/payments/payments.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { BookingsModule } from './application/bookings/bookings.module';
     FilesModule,
     MailerModule,
     BookingsModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
