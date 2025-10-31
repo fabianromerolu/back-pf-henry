@@ -68,7 +68,10 @@ export class BookingsService {
     page: number,
     limit: number,
   ): Promise<BookingsResponseDto> {
-    const skip = (page - 1) * limit;
+    const validPage = isNaN(page) || page < 1 ? 1 : page;
+    const validLimit = isNaN(limit) || limit < 1 ? 10 : Math.min(limit, 100);
+
+    const skip = (validPage - 1) * validLimit;
 
     const [bookings, total] = await Promise.all([
       this.prisma.bookings.findMany({
@@ -76,26 +79,30 @@ export class BookingsService {
         include: {
           pin: {
             select: {
+              id: true,
               model: true,
+              pricePerDay: true,
+              pricePerHour: true,
+              pricePerWeek: true,
             },
           },
         },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take: validLimit,
       }),
       this.prisma.bookings.count({ where: { userId } }),
     ]);
 
-    const totalPages = Math.ceil(total / limit);
-    const hasNext = page < totalPages;
-    const hasPrev = page > 1;
+    const totalPages = Math.ceil(total / validLimit);
+    const hasNext = validPage < totalPages;
+    const hasPrev = validPage > 1;
 
     return {
       data: bookings,
       total,
-      page,
-      limit,
+      page: validPage,
+      limit: validLimit,
       totalPages,
       hasNext,
       hasPrev,
