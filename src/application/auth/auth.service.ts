@@ -9,6 +9,8 @@ import { JwtService } from '@nestjs/jwt';
 import axios from 'axios';
 import * as bcrypt from 'bcryptjs';
 import { MailerService } from '../mailer/mailer.service';
+import { CreateUserDto } from './dtos/create-user.dto';
+import { LoginUserDto } from './dtos/login-user.dto';
 
 type AppRole = 'ADMIN' | 'RENTER' | 'USER';
 
@@ -33,10 +35,10 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-    private readonly mailer: MailerService, // 👈 AÑADIDO
+    private readonly mailer: MailerService,
   ) {}
 
-  /* ===== helpers de correo para no romper el flujo si falla SMTP ===== */
+  // ===== helpers de correo =====
   private async safeSendWelcome(email?: string | null, name?: string | null) {
     if (!email) return;
     try {
@@ -118,7 +120,6 @@ export class AuthService {
     }
   }
 
-
   private sanitizeRoleForRegistration(
     requested?: string | null,
     email?: string | null,
@@ -128,10 +129,7 @@ export class AuthService {
     return 'USER';
   }
 
-  /** Crea/actualiza usuario desde SSO (Auth0).
-   *  ⚠️ No enviamos correos aquí para no spamear en endpoints tipo /auth/me.
-   *  Para SSO, dispara correos tras el callback real de login (ver helper más abajo).
-   */
+  /** Crea/actualiza usuario desde SSO (Auth0). */
   async validateUser(payload: any): Promise<{ user: any; created: boolean }> {
     const sub = payload.sub;
     const email = payload.email || null;
@@ -176,7 +174,7 @@ export class AuthService {
   }
 
   /** Registro LOCAL */
-  async register(dto: any /* CreateUserDto */) {
+  async register(dto: CreateUserDto) {
     const {
       email,
       password,
@@ -188,9 +186,7 @@ export class AuthService {
     } = dto;
 
     if (!password || !confirmPassword) {
-      throw new BadRequestException(
-        'Password and confirmPassword are required',
-      );
+      throw new BadRequestException('Password and confirmPassword are required');
     }
     if (password !== confirmPassword)
       throw new BadRequestException('Passwords do not match');
@@ -210,7 +206,7 @@ export class AuthService {
       role,
     } as any);
 
-    // 👇 Enviar bienvenida (no bloquea el flujo si falla)
+    // Enviar bienvenida (no bloquea el flujo si falla)
     this.safeSendWelcome(user.email, user.name ?? user.username ?? undefined);
 
     const token = await this.generateToken({
@@ -227,7 +223,7 @@ export class AuthService {
   }
 
   /** Login LOCAL */
-  async login(dto: any /* LoginUserDto */) {
+  async login(dto: LoginUserDto) {
     const { email, password } = dto;
     if (!password) throw new BadRequestException('Password is required');
 
@@ -246,7 +242,7 @@ export class AuthService {
     }
     const fresh = await this.usersService.findOne(user.id);
 
-    // 👇 Email de “login”
+    // Email de “login”
     this.safeSendLogin(fresh.email, fresh.name ?? fresh.username ?? undefined);
 
     const token = await this.generateToken({
@@ -262,12 +258,7 @@ export class AuthService {
     };
   }
 
-  /* ======= Opcional: úsalo en tu callback SSO (Auth0) =======
-   * Ejemplo (pseudocódigo):
-   *   const user = await authService.validateUser(req.oidc.user);
-   *   if (isNewUser) await authService.sendWelcomeForSso(user);
-   *   else await authService.sendLoginForSso(user);
-   */
+  /* ======= Helpers para SSO (Auth0) ======= */
   async sendWelcomeForSso(user: {
     email?: string | null;
     name?: string | null;
@@ -278,6 +269,7 @@ export class AuthService {
       user.name ?? user.username ?? undefined,
     );
   }
+
   async sendLoginForSso(user: {
     email?: string | null;
     name?: string | null;
@@ -322,5 +314,4 @@ export class AuthService {
       throw new Error('The token could not be revoked');
     }
   }
-
 }
