@@ -32,6 +32,16 @@ export class BookingsService {
       throw new BadRequestException('El vehículo no está disponible');
     }
 
+    const availability: boolean = await this.checkAvailability(
+      createBooking.pinId,
+      createBooking.start_date,
+      createBooking.end_date,
+    );
+
+    if (!availability) {
+      throw new BadRequestException('Periodo no valido');
+    }
+
     const prices: price = {
       pricePerDay: vehicleExist.pricePerDay,
       pricePerHour: vehicleExist.pricePerHour,
@@ -51,15 +61,15 @@ export class BookingsService {
       },
     });
 
-    await this.prisma.pin.update({
-      where: {
-        id: vehicleExist.id,
-      },
-      data: {
-        status: VehicleStatus.BLOCKED,
-        updatedAt: new Date(),
-      },
-    });
+    // await this.prisma.pin.update({
+    //   where: {
+    //     id: vehicleExist.id,
+    //   },
+    //   data: {
+    //     status: VehicleStatus.BLOCKED,
+    //     updatedAt: new Date(),
+    //   },
+    // });
     return newOrder;
   }
 
@@ -132,5 +142,68 @@ export class BookingsService {
     }
 
     return booking;
+  }
+
+  async checkAvailability(
+    pinId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<boolean> {
+    this.validateDates(startDate, endDate);
+
+    const overlappingBooking = await this.prisma.bookings.findFirst({
+      where: {
+        pinId: pinId,
+        status: 'active',
+        OR: [
+          {
+            startDate: { lte: startDate },
+            endDate: { gte: startDate },
+          },
+
+          {
+            startDate: { lte: endDate },
+            endDate: { gte: endDate },
+          },
+
+          {
+            startDate: { gte: startDate },
+            endDate: { lte: endDate },
+          },
+        ],
+      },
+    });
+
+    if (overlappingBooking) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private validateDates(startDate: Date, endDate: Date): void {
+    const now = new Date();
+
+    if (startDate < now) {
+      throw new BadRequestException(
+        'La fecha de inicio no puede ser en el pasado',
+      );
+    }
+
+    if (endDate <= startDate) {
+      throw new BadRequestException(
+        'La fecha de fin debe ser posterior a la fecha de inicio',
+      );
+    }
+
+    const minRentalHours = 1;
+    const diffMs = endDate.getTime() - startDate.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+
+    if (diffHours < minRentalHours) {
+      throw new BadRequestException(
+        `El período mínimo de alquiler es ${minRentalHours} hora`,
+      );
+    }
   }
 }
