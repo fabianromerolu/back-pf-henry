@@ -14,8 +14,8 @@ export class CouponsController {
 constructor(private readonly coupons: CouponsService) {}
 
 
-// @UseGuards(AnyJwtGuard, RolesGuard)
-// @Roles(AppRole.ADMIN)
+@UseGuards(AnyJwtGuard, RolesGuard)
+@Roles(AppRole.ADMIN)
 @Post()
 async create(@Body() dto: CreateCouponDto) {
 return this.coupons.create(dto as any);

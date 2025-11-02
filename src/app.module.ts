@@ -12,6 +12,7 @@ import { BookingsModule } from './application/bookings/bookings.module';
 import { PaymentsModule } from './application/payments/payments.module';
 import { CouponsModule } from './application/coupons/coupons.module';
 
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env'] }),
