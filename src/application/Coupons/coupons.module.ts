@@ -4,11 +4,13 @@ import { CouponsService } from './coupons.service';
 import { CouponsController } from './coupons.controller';
 import { PrismaModule } from '../../infra/prisma/prisma.module';
 import { MailerModule } from '../mailer/mailer.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     PrismaModule,   // acceso a la base de datos
     MailerModule,   // para enviar emails de cupones
+    UsersModule,
   ],
   controllers: [CouponsController],
   providers: [CouponsService],
