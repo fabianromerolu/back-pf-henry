@@ -68,16 +68,6 @@ export class UsersService {
     return this.findOne(id);
   }
 
-  async createUser(dto: any): Promise<User> {
-    const { confirmPassword, ...rest } = dto ?? {};
-    return this.prisma.user.create({
-      data: {
-        ...rest,
-        email: this.normalizeEmail(rest.email)!,
-      },
-    });
-  }
-
   async updateUser(id: string, patch: Partial<UpdateUserDto>): Promise<User> {
     const { confirmPassword, ...rest } = (patch ?? {}) as any;
     if (rest.email) rest.email = this.normalizeEmail(rest.email)!;

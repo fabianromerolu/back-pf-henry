@@ -174,20 +174,6 @@ export class UsersController {
   @UseGuards(AnyJwtGuard, RolesGuard)
   @ApiBearerAuth()
   @Roles(AppRole.ADMIN)
-  @Post()
-  @ApiOperation({ summary: 'Create user' })
-  @ApiCreatedResponse({ type: UserResponseDto })
-  @ApiBadRequestResponse()
-  async createUser(@Body() dto: CreateUserDto) {
-    const user = await this.usersService.createUser(dto);
-    return plainToInstance(UserResponseDto, user, {
-      excludeExtraneousValues: true,
-    });
-  }
-
-  @UseGuards(AnyJwtGuard, RolesGuard)
-  @ApiBearerAuth()
-  @Roles(AppRole.ADMIN)
   @Patch(':id')
   @ApiOperation({ summary: 'Update user (PATCH)' })
   @ApiParam({ name: 'id', format: 'uuid' })
