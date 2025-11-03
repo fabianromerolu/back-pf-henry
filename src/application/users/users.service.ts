@@ -1,3 +1,4 @@
+//src/application/users/users.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/infra/prisma/prisma.service';
 import { AppRole, Sex, User, UserStatus } from '@prisma/client';

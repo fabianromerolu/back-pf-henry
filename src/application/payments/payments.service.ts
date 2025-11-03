@@ -1,3 +1,4 @@
+//src/application/payments/payments.service.ts
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import MercadoPagoConfig, { Payment, Preference } from 'mercadopago';
 import { PrismaService } from 'src/infra/prisma/prisma.service';
@@ -42,14 +43,17 @@ export class PaymentsService {
 
   async createPayment(bookingId: string) {
     try {
+      const booking = await this.prisma.bookings.findUnique({ where: { id: bookingId } });
+      if (!booking) throw new Error('Booking not found');
+
       const body = {
         items: [
           {
             id: bookingId,
             title: 'Reserva de vehículo',
             quantity: 1,
-            unit_price: 100,
-            currency_id: 'ARS',
+            unit_price: Number(booking.totalPrice),
+            currency_id: booking.currency || 'COP',
           },
         ],
         back_urls: {
@@ -62,86 +66,70 @@ export class PaymentsService {
         notification_url: `${process.env.MP_BACKEND_URL}/payments/webhook`,
       };
 
-      const result = (await this.preference.create({
-        body,
-      })) as PreferenceCreateResponse;
-
-      if (!result || (!result.init_point && !result.response?.init_point)) {
-        throw new Error(
-          'Respuesta inesperada al crear la preferencia de pago.',
-        );
-      }
-
+      const result = (await this.preference.create({ body })) as PreferenceCreateResponse;
       const initPoint = result.response?.init_point || result.init_point;
-
+      if (!initPoint) throw new Error('MP init_point vacío');
       return { init_point: initPoint };
-    } catch (error) {
-      this.logger.error('Error creando preferencia:', error);
+    } catch (e) {
+      this.logger.error('Error creando preferencia:', e);
       throw new Error('Error al crear la preferencia de pago');
     }
   }
 
+
   async handleWebhook(data: MercadoPagoWebhookData) {
     try {
       this.logger.log(`Webhook recibido: ${JSON.stringify(data)}`);
-
       const topic = data.topic || data.type;
-
       if (topic !== 'payment') return { received: true };
 
       const paymentId = data.data?.id ?? data.id;
-      if (!paymentId) {
-        this.logger.warn('Webhook sin ID de pago');
-        return { received: false };
-      }
+      if (!paymentId) return { received: false };
 
-      const result = await this.payment.get({
-        id: paymentId,
-      });
-      this.logger.log(`Pago consultado: ${JSON.stringify(result)}`);
-
+      const result = await this.payment.get({ id: paymentId });
       const bookingId = result.external_reference;
-      if (!bookingId) {
-        this.logger.warn('No se encontró bookingId en external_reference');
-        return { received: true };
-      }
+      if (!bookingId) return { received: true };
 
       const status = (result.status ?? 'UNKNOWN').toUpperCase();
 
       let paymentStatus: string;
-
       switch (status) {
-        case 'APPROVED':
-          paymentStatus = 'PAID';
-          break;
-        case 'PENDING':
-          paymentStatus = 'PENDING';
-          break;
-        case 'REJECTED':
-          paymentStatus = 'FAILED';
-          break;
-        default:
-          paymentStatus = 'UNPAID';
+        case 'APPROVED': paymentStatus = 'PAID'; break;
+        case 'PENDING':  paymentStatus = 'PENDING'; break;
+        case 'REJECTED': paymentStatus = 'FAILED'; break;
+        default:         paymentStatus = 'UNPAID';
       }
 
-      if (bookingId) {
-        await this.prisma.bookings.update({
-          where: { id: bookingId },
+      const booking = await this.prisma.bookings.update({
+        where: { id: bookingId },
+        data: { paymentStatus, paymentId: String(result.id) },
+        include: { pin: true },
+      });
+
+      // 👇 Credita wallet si se aprobó
+      if (paymentStatus === 'PAID') {
+        const holdDays = Number(process.env.WALLET_HOLD_DAYS ?? '3');
+        const availableAt = new Date();
+        availableAt.setDate(availableAt.getDate() + holdDays);
+
+        await this.prisma.walletTransaction.create({
           data: {
-            paymentStatus,
-            paymentId: String(result.id),
+            ownerId: booking.pin.ownerId,
+            bookingId: booking.id,
+            type: 'CREDIT',
+            amount: booking.ownerEarning,
+            currency: booking.currency || 'COP',
+            status: holdDays > 0 ? 'PENDING' : 'AVAILABLE',
+            availableAt: holdDays > 0 ? availableAt : null,
           },
         });
-        this.logger.log(
-          `Booking ${bookingId} actualizado a estado ${paymentStatus}`,
-        );
       }
 
       return { received: true };
-    } catch (error: unknown) {
-      const err = error as Error;
-      this.logger.error(`Error al procesar webhook: ${err.message}`);
-      return { received: false, error: err.message };
+    } catch (error: any) {
+      this.logger.error(`Error al procesar webhook: ${error?.message}`);
+      return { received: false, error: error?.message };
     }
   }
+
 }

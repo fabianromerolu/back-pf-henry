@@ -1,3 +1,4 @@
+//src/application/pins/pins.module.ts
 import { Module } from '@nestjs/common';
 import { PinsController } from './pins.controller';
 import { PinsService } from './pins.service';
