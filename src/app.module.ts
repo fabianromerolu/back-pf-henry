@@ -10,7 +10,6 @@ import { AppService } from './app.service';
 import { MailerModule } from './application/mailer/mailer.module';
 import { BookingsModule } from './application/bookings/bookings.module';
 import { PaymentsModule } from './application/payments/payments.module';
-import { CouponsModule } from './application/coupons/coupons.module';
 
 @Module({
   imports: [
@@ -23,7 +22,6 @@ import { CouponsModule } from './application/coupons/coupons.module';
     MailerModule,
     BookingsModule,
     PaymentsModule,
-    CouponsModule
   ],
   controllers: [AppController],
   providers: [AppService],
