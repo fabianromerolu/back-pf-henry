@@ -5,9 +5,6 @@ export class PinListItemResponseDto {
   @ApiProperty()
   id!: string;
 
-  @ApiProperty()
-  title!: string;
-
   @ApiProperty({ example: '50.00' })
   pricePerDay!: string;
 
@@ -25,7 +22,7 @@ export class PinListItemResponseDto {
     nullable: true,
     maxLength: 100,
   })
-  description!: string | null;
+  description?: string | null;
 
   @ApiProperty({
     example: 'https://cdn.com/corolla.jpg',

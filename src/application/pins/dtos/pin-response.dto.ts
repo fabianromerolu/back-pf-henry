@@ -25,7 +25,6 @@ export class PinResponseDto {
   @ApiProperty() @Expose() id: string;
 
   /* Identificación */
-  @ApiProperty() @Expose() title: string;
   @ApiProperty() @Expose() make: string;
   @ApiProperty() @Expose() model: string;
   @ApiProperty() @Expose() year: number;

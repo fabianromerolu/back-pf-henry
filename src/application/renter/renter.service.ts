@@ -6,52 +6,79 @@ import { BookingsStatus } from '@prisma/client';
 export class RenterService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listOwnerBookings(ownerId: string, opts: {
-    status?: BookingsStatus; from?: string; to?: string; page?: number; limit?: number;
-  }) {
-    const page  = Math.max(1, Number(opts.page ?? 1));
+  async listOwnerBookings(
+    ownerId: string,
+    opts: {
+      status?: BookingsStatus;
+      from?: string;
+      to?: string;
+      page?: number;
+      limit?: number;
+    },
+  ) {
+    const page = Math.max(1, Number(opts.page ?? 1));
     const limit = Math.min(100, Math.max(1, Number(opts.limit ?? 20)));
     const where: any = { pin: { ownerId } };
     if (opts.status) where.status = opts.status;
     if (opts.from || opts.to) {
       where.startDate = {
         ...(opts.from && { gte: new Date(opts.from) }),
-        ...(opts.to   && { lte: new Date(opts.to) }),
+        ...(opts.to && { lte: new Date(opts.to) }),
       };
     }
 
     const [items, total] = await this.prisma.$transaction([
       this.prisma.bookings.findMany({
-        where, orderBy: { createdAt: 'desc' }, skip: (page-1)*limit, take: limit,
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
         include: {
-          pin:  { select: { id: true, title: true, make: true, model: true } },
+          pin: { select: { id: true, make: true, model: true } },
           user: { select: { id: true, name: true, email: true } }, // cliente
         },
       }),
       this.prisma.bookings.count({ where }),
     ]);
 
-    return { data: items, meta: { page, limit, total, pages: Math.ceil(total/limit) } };
+    return {
+      data: items,
+      meta: { page, limit, total, pages: Math.ceil(total / limit) },
+    };
   }
 
   async overview(ownerId: string) {
-    const now = new Date(); const monthAgo = new Date(now); monthAgo.setDate(now.getDate() - 30);
-    const [pinsTotal, pinsPublished, pinsBlocked, last30, pending] = await this.prisma.$transaction([
-      this.prisma.pin.count({ where: { ownerId } }),
-      this.prisma.pin.count({ where: { ownerId, status: 'PUBLISHED' } }),
-      this.prisma.pin.count({ where: { ownerId, status: 'BLOCKED' } }),
-      this.prisma.bookings.aggregate({
-        _sum: { ownerEarning: true },
-        where: { pin: { ownerId }, paymentStatus: 'PAID', createdAt: { gte: monthAgo } },
-      }),
-      this.prisma.bookings.aggregate({
-        _sum: { ownerEarning: true },
-        where: { pin: { ownerId }, paymentStatus: { in: ['PENDING', 'UNPAID'] } },
-      }),
-    ]);
+    const now = new Date();
+    const monthAgo = new Date(now);
+    monthAgo.setDate(now.getDate() - 30);
+    const [pinsTotal, pinsPublished, pinsBlocked, last30, pending] =
+      await this.prisma.$transaction([
+        this.prisma.pin.count({ where: { ownerId } }),
+        this.prisma.pin.count({ where: { ownerId, status: 'PUBLISHED' } }),
+        this.prisma.pin.count({ where: { ownerId, status: 'BLOCKED' } }),
+        this.prisma.bookings.aggregate({
+          _sum: { ownerEarning: true },
+          where: {
+            pin: { ownerId },
+            paymentStatus: 'PAID',
+            createdAt: { gte: monthAgo },
+          },
+        }),
+        this.prisma.bookings.aggregate({
+          _sum: { ownerEarning: true },
+          where: {
+            pin: { ownerId },
+            paymentStatus: { in: ['PENDING', 'UNPAID'] },
+          },
+        }),
+      ]);
 
     return {
-      pins: { total: pinsTotal, published: pinsPublished, blocked: pinsBlocked },
+      pins: {
+        total: pinsTotal,
+        published: pinsPublished,
+        blocked: pinsBlocked,
+      },
       revenueLast30d: last30._sum.ownerEarning?.toString() ?? '0',
       revenuePending: pending._sum.ownerEarning?.toString() ?? '0',
     };
@@ -75,27 +102,34 @@ export class RenterService {
       where: { ownerId, type: 'DEBIT' },
     });
 
-    const avail = Number(available._sum.amount || 0) - Math.abs(Number(debits._sum.amount || 0));
-    const pend  = Number(pending._sum.amount  || 0);
+    const avail =
+      Number(available._sum.amount || 0) -
+      Math.abs(Number(debits._sum.amount || 0));
+    const pend = Number(pending._sum.amount || 0);
 
     return {
       available: Math.max(avail, 0).toFixed(2),
-      pending : Math.max(pend , 0).toFixed(2),
+      pending: Math.max(pend, 0).toFixed(2),
       currency: 'COP',
     };
   }
 
   async listPayments(ownerId: string, page = 1, limit = 20) {
-    const p = Math.max(1, Number(page)); const l = Math.min(100, Math.max(1, Number(limit)));
+    const p = Math.max(1, Number(page));
+    const l = Math.min(100, Math.max(1, Number(limit)));
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.walletTransaction.findMany({
         where: { ownerId },
         orderBy: { createdAt: 'desc' },
-        skip: (p-1)*l, take: l,
+        skip: (p - 1) * l,
+        take: l,
       }),
       this.prisma.walletTransaction.count({ where: { ownerId } }),
     ]);
-    return { data: rows, meta: { page: p, limit: l, total, pages: Math.ceil(total/l) } };
+    return {
+      data: rows,
+      meta: { page: p, limit: l, total, pages: Math.ceil(total / l) },
+    };
   }
 
   async createPayout(ownerId: string, amount: number) {
@@ -123,15 +157,20 @@ export class RenterService {
   }
 
   async listPayouts(ownerId: string, page = 1, limit = 20) {
-    const p = Math.max(1, Number(page)); const l = Math.min(100, Math.max(1, Number(limit)));
+    const p = Math.max(1, Number(page));
+    const l = Math.min(100, Math.max(1, Number(limit)));
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.payout.findMany({
         where: { ownerId },
         orderBy: { createdAt: 'desc' },
-        skip: (p-1)*l, take: l,
+        skip: (p - 1) * l,
+        take: l,
       }),
       this.prisma.payout.count({ where: { ownerId } }),
     ]);
-    return { data: rows, meta: { page: p, limit: l, total, pages: Math.ceil(total/l) } };
+    return {
+      data: rows,
+      meta: { page: p, limit: l, total, pages: Math.ceil(total / l) },
+    };
   }
 }
