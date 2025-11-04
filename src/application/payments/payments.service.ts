@@ -43,8 +43,17 @@ export class PaymentsService {
 
   async createPayment(bookingId: string) {
     try {
-      const booking = await this.prisma.bookings.findUnique({ where: { id: bookingId } });
+      const booking = await this.prisma.bookings.findUnique({
+        where: { id: bookingId },
+      });
       if (!booking) throw new Error('Booking not found');
+
+      const price = Number(booking.totalPrice);
+      if (isNaN(price) || price <= 0) {
+        throw new Error(
+          `Precio inválido para la reserva ${bookingId}: ${booking.totalPrice}`,
+        );
+      }
 
       const body = {
         items: [
@@ -52,8 +61,9 @@ export class PaymentsService {
             id: bookingId,
             title: 'Reserva de vehículo',
             quantity: 1,
-            unit_price: Number(booking.totalPrice),
-            currency_id: booking.currency || 'COP',
+            unit_price: price,
+            currency_id:
+              process.env.MP_CURRENCY_ID || booking.currency || 'MXN',
           },
         ],
         back_urls: {
@@ -66,7 +76,9 @@ export class PaymentsService {
         notification_url: `${process.env.MP_BACKEND_URL}/payments/webhook`,
       };
 
-      const result = (await this.preference.create({ body })) as PreferenceCreateResponse;
+      const result = (await this.preference.create({
+        body,
+      })) as PreferenceCreateResponse;
       const initPoint = result.response?.init_point || result.init_point;
       if (!initPoint) throw new Error('MP init_point vacío');
       return { init_point: initPoint };
@@ -75,7 +87,6 @@ export class PaymentsService {
       throw new Error('Error al crear la preferencia de pago');
     }
   }
-
 
   async handleWebhook(data: MercadoPagoWebhookData) {
     try {
@@ -94,10 +105,17 @@ export class PaymentsService {
 
       let paymentStatus: string;
       switch (status) {
-        case 'APPROVED': paymentStatus = 'PAID'; break;
-        case 'PENDING':  paymentStatus = 'PENDING'; break;
-        case 'REJECTED': paymentStatus = 'FAILED'; break;
-        default:         paymentStatus = 'UNPAID';
+        case 'APPROVED':
+          paymentStatus = 'PAID';
+          break;
+        case 'PENDING':
+          paymentStatus = 'PENDING';
+          break;
+        case 'REJECTED':
+          paymentStatus = 'FAILED';
+          break;
+        default:
+          paymentStatus = 'UNPAID';
       }
 
       const booking = await this.prisma.bookings.update({
@@ -131,5 +149,4 @@ export class PaymentsService {
       return { received: false, error: error?.message };
     }
   }
-
 }
