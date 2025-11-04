@@ -16,7 +16,7 @@ import { UserPayloadInterface } from './interfaces/bookingsInterface';
 export class BookingsService {
   constructor(private readonly prisma: PrismaService) {}
 
-    async completeBooking(bookingId: string, user: UserPayloadInterface) {
+  async completeBooking(bookingId: string, user: UserPayloadInterface) {
     const booking = await this.prisma.bookings.findUnique({
       where: { id: bookingId },
       include: { pin: true },
@@ -48,10 +48,11 @@ export class BookingsService {
     });
     if (!booking) throw new NotFoundException('Reserva no encontrada');
 
-    const isRenter = booking.userId === user.id;       // quien alquiló
-    const isOwner  = booking.pin.ownerId === user.id;  // dueño del auto
-    const isAdmin  = user.role === 'ADMIN';
-    if (!isRenter && !isOwner && !isAdmin) throw new ForbiddenException('No autorizado');
+    const isRenter = booking.userId === user.id; // quien alquiló
+    const isOwner = booking.pin.ownerId === user.id; // dueño del auto
+    const isAdmin = user.role === 'ADMIN';
+    if (!isRenter && !isOwner && !isAdmin)
+      throw new ForbiddenException('No autorizado');
 
     await this.prisma.$transaction([
       this.prisma.bookings.update({
@@ -66,12 +67,19 @@ export class BookingsService {
 
     return { success: true };
   }
-  
-  async create(createBooking: CreateBookingDto, userId: string): Promise<bookingDto> {
-    const userExist = await this.prisma.user.findUnique({ where: { id: userId } });
+
+  async create(
+    createBooking: CreateBookingDto,
+    userId: string,
+  ): Promise<bookingDto> {
+    const userExist = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
     if (!userExist) throw new BadRequestException('Usuario no encotrado');
 
-    const vehicle = await this.prisma.pin.findUnique({ where: { id: createBooking.pinId } });
+    const vehicle = await this.prisma.pin.findUnique({
+      where: { id: createBooking.pinId },
+    });
     if (!vehicle) throw new BadRequestException('Vehiculo no encotrado');
     if (vehicle.status !== VehicleStatus.PUBLISHED) {
       throw new BadRequestException('El vehículo no está disponible');
@@ -92,7 +100,11 @@ export class BookingsService {
       pricePerHour: vehicle.pricePerHour,
       pricePerWeek: vehicle.pricePerWeek,
     };
-    const gross = priceCalculator(prices, createBooking.start_date, createBooking.end_date);
+    const gross = priceCalculator(
+      prices,
+      createBooking.start_date,
+      createBooking.end_date,
+    );
     const FEE = Number(process.env.PLATFORM_FEE_PCT ?? '0.15');
     const currency = process.env.DEFAULT_CURRENCY || 'COP';
 
