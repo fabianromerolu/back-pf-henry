@@ -1,4 +1,4 @@
-//src/application/auth/auth.controller.ts
+// src/application/auth/auth.controller.ts
 import {
   Controller,
   Get,
@@ -10,6 +10,7 @@ import {
   HttpStatus,
   Query,
   UseGuards,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,14 +20,12 @@ import {
   ApiUnauthorizedResponse,
   ApiBadRequestResponse,
   ApiCreatedResponse,
-  ApiFoundResponse,
-  ApiQuery,
-  ApiResponse,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { AnyJwtGuard } from './guards/any-jwt.guard';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { LoginUserDto } from './dtos/login-user.dto';
+import { UsersService } from '../users/users.service';
 
 function frontBase(): string {
   return (
@@ -46,21 +45,34 @@ function absolutizeReturnTo(rt?: string): string {
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService, // 👈 FIX: inyectado
+  ) {}
 
   @Get('me')
-  @ApiOperation({ summary: 'Who am I (session-based)' })
-  @ApiOkResponse({ description: 'Usuario autenticado si hay sesión OIDC' })
-  @ApiUnauthorizedResponse({ description: 'No logged in' })
+  @ApiOperation({ summary: 'User info desde JWT (cookie o bearer)' })
+  @ApiOkResponse({ description: 'Devuelve el usuario autenticado' })
   async me(@Req() req: any) {
-    const oidcUser = req.oidc?.user;
-    if (!oidcUser) return { message: 'No logged in' };
-    const user = await this.authService.validateUser({
-      sub: oidcUser.sub,
-      email: oidcUser.email,
-      name: oidcUser.name,
-    });
-    return { user, oidcUser };
+    const bearer = req.headers.authorization?.split(' ')[1] ?? null;
+    const cookieToken = req.cookies?.volantia_token ?? null; // nombre de la cookie
+    const token = bearer || cookieToken;
+
+    if (!token) throw new UnauthorizedException('Missing token');
+
+    // valida tu JWT local
+    const payload = await this.authService.validateLocalJwt(token);
+
+    // trae el usuario; lanza 404 si no existe
+    const user = await this.usersService.findOneOrThrow(payload.sub);
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name ?? user.username ?? user.email,
+      role: user.role,
+      isAdmin: user.isAdmin,
+    };
   }
 
   @UseGuards(AnyJwtGuard)

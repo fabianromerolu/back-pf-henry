@@ -14,12 +14,21 @@ type AppRole = 'ADMIN' | 'RENTER' | 'USER';
 
 interface JwtAppPayload {
   sub: string;
-  email: string;
-  name: string;
+  email: string | null;
+  name: string | null;
   role: AppRole;
 }
 
-interface JwtPayload {
+interface LocalJwtPayload {
+  sub: string;
+  email?: string | null;
+  name?: string | null;
+  role?: AppRole;
+  iat?: number;
+  exp?: number;
+}
+
+interface OidcJwtPayload {
   sub: string;
   email?: string;
   name?: string;
@@ -33,10 +42,10 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-    private readonly mailer: MailerService, // 👈 AÑADIDO
+    private readonly mailer: MailerService,
   ) {}
 
-  /* ===== helpers de correo para no romper el flujo si falla SMTP ===== */
+  /* ================== Helpers correo ================== */
   private async safeSendWelcome(email?: string | null, name?: string | null) {
     if (!email) return;
     try {
@@ -54,7 +63,7 @@ export class AuthService {
     }
   }
 
-  /** ADMIN por dominio exacto (env: ADMIN_DOMAINS=midominio.com,otra.co) */
+  /* ================== Roles ================== */
   private isAdminEmail(email?: string | null): boolean {
     const domain = email?.split('@')[1]?.toLowerCase().trim();
     const envList = (process.env.ADMIN_DOMAINS || '')
@@ -66,7 +75,16 @@ export class AuthService {
     return new Set(envList).has(domain);
   }
 
-  /** Genera JWT con role */
+  private sanitizeRoleForRegistration(
+    requested?: string | null,
+    email?: string | null,
+  ): AppRole {
+    if (this.isAdminEmail(email)) return 'ADMIN';
+    if (requested === 'RENTER') return 'RENTER';
+    return 'USER';
+  }
+
+  /* ================== JWT local ================== */
   async generateToken(payload: JwtAppPayload): Promise<string> {
     return this.jwtService.sign(
       {
@@ -75,19 +93,38 @@ export class AuthService {
         name: payload.name,
         role: payload.role,
       },
-      { expiresIn: '60m' },
+      {
+        expiresIn: '60m',
+        secret: process.env.JWT_SECRET,
+      },
     );
   }
 
-  /** Si validas tokens propios de Auth0 aquí, usa JWKS en producción (no JWT_SECRET local). */
-  async validateAuth0Token(token: string): Promise<JwtPayload> {
+  async validateLocalJwt(token: string): Promise<LocalJwtPayload> {
     try {
-      const decoded = await this.jwtService.verifyAsync<JwtPayload>(token, {
+      const decoded = await this.jwtService.verifyAsync<LocalJwtPayload>(
+        token,
+        { secret: process.env.JWT_SECRET },
+      );
+      if (!decoded?.sub) throw new Error('Invalid token structure');
+      return decoded;
+    } catch {
+      throw new UnauthorizedException('Invalid token');
+    }
+  }
+
+  /* ================== OIDC (Auth0) opcional ================== */
+  async validateAuth0Token(token: string): Promise<OidcJwtPayload> {
+    try {
+      const decoded = await this.jwtService.verifyAsync<OidcJwtPayload>(token, {
         secret: process.env.JWT_SECRET,
       });
       if (!decoded.sub) throw new Error('Invalid token structure');
 
-      const expectedIss = (process.env.AUTH0_ISSUER_BASE_URL || '').replace(/\/+$/, '');
+      const expectedIss = (process.env.AUTH0_ISSUER_BASE_URL || '').replace(
+        /\/+$/,
+        '',
+      );
       const gotIss = (decoded.iss || '').replace(/\/+$/, '');
       if (expectedIss && gotIss !== expectedIss) {
         throw new Error('Invalid token issuer');
@@ -96,16 +133,17 @@ export class AuthService {
       const expectedAud = process.env.AUTH0_AUDIENCE;
       if (expectedAud) {
         if (Array.isArray(decoded.aud)) {
-          if (!decoded.aud.includes(expectedAud)) throw new Error('Invalid token audience');
-        } else {
-          if (decoded.aud !== expectedAud) throw new Error('Invalid token audience');
+          if (!decoded.aud.includes(expectedAud))
+            throw new Error('Invalid token audience');
+        } else if (decoded.aud !== expectedAud) {
+          throw new Error('Invalid token audience');
         }
       } else {
-        // sin audience, acepta client_id como audiencia
         const clientId = process.env.AUTH0_CLIENT_ID;
         if (clientId) {
           if (Array.isArray(decoded.aud)) {
-            if (!decoded.aud.includes(clientId)) throw new Error('Invalid token audience');
+            if (!decoded.aud.includes(clientId))
+              throw new Error('Invalid token audience');
           } else if (decoded.aud !== clientId) {
             throw new Error('Invalid token audience');
           }
@@ -118,20 +156,7 @@ export class AuthService {
     }
   }
 
-
-  private sanitizeRoleForRegistration(
-    requested?: string | null,
-    email?: string | null,
-  ): AppRole {
-    if (this.isAdminEmail(email)) return 'ADMIN';
-    if (requested === 'RENTER') return 'RENTER';
-    return 'USER';
-  }
-
-  /** Crea/actualiza usuario desde SSO (Auth0).
-   *  ⚠️ No enviamos correos aquí para no spamear en endpoints tipo /auth/me.
-   *  Para SSO, dispara correos tras el callback real de login (ver helper más abajo).
-   */
+  /* ================== Flujo SSO (Auth0) ================== */
   async validateUser(payload: any): Promise<{ user: any; created: boolean }> {
     const sub = payload.sub;
     const email = payload.email || null;
@@ -148,8 +173,8 @@ export class AuthService {
           if (this.isAdminEmail(email)) patch.role = 'ADMIN';
           else if (!byEmail.role) patch.role = 'USER';
           await this.usersService.updateUser(byEmail.id, patch as any);
-          user = await this.usersService.findOne(byEmail.id);
-          return { user, created }; // enlazado, no “nuevo”
+          user = await this.usersService.findOneOrThrow(byEmail.id);
+          return { user, created }; // enlazado
         }
       }
       const role: AppRole = this.isAdminEmail(email) ? 'ADMIN' : 'USER';
@@ -164,18 +189,42 @@ export class AuthService {
       created = true;
     } else if (email && this.isAdminEmail(email) && user.role !== 'ADMIN') {
       await this.usersService.updateUser(user.id, { role: 'ADMIN' } as any);
-      user = await this.usersService.findOne(user.id);
+      user = await this.usersService.findOneOrThrow(user.id);
     }
+
+    // 👇 Garantiza a TS que user no es null antes de tocar role
+    if (!user) throw new UnauthorizedException('User not found');
 
     if (!user.role) {
       await this.usersService.updateUser(user.id, { role: 'USER' } as any);
-      user = await this.usersService.findOne(user.id);
+      user = await this.usersService.findOneOrThrow(user.id);
     }
 
     return { user, created };
   }
 
-  /** Registro LOCAL */
+  async sendWelcomeForSso(user: {
+    email?: string | null;
+    name?: string | null;
+    username?: string | null;
+  }) {
+    await this.safeSendWelcome(
+      user.email,
+      user.name ?? user.username ?? undefined,
+    );
+  }
+  async sendLoginForSso(user: {
+    email?: string | null;
+    name?: string | null;
+    username?: string | null;
+  }) {
+    await this.safeSendLogin(
+      user.email,
+      user.name ?? user.username ?? undefined,
+    );
+  }
+
+  /* ================== Auth local ================== */
   async register(dto: any /* CreateUserDto */) {
     const {
       email,
@@ -210,7 +259,6 @@ export class AuthService {
       role,
     } as any);
 
-    // 👇 Enviar bienvenida (no bloquea el flujo si falla)
     this.safeSendWelcome(user.email, user.name ?? user.username ?? undefined);
 
     const token = await this.generateToken({
@@ -226,7 +274,6 @@ export class AuthService {
     };
   }
 
-  /** Login LOCAL */
   async login(dto: any /* LoginUserDto */) {
     const { email, password } = dto;
     if (!password) throw new BadRequestException('Password is required');
@@ -244,10 +291,14 @@ export class AuthService {
     if (this.isAdminEmail(email) && user.role !== 'ADMIN') {
       await this.usersService.updateUser(user.id, { role: 'ADMIN' } as any);
     }
-    const fresh = await this.usersService.findOne(user.id);
 
-    // 👇 Email de “login”
-    this.safeSendLogin(fresh.email, fresh.name ?? fresh.username ?? undefined);
+    // 👇 A partir de aquí queremos un User no-null
+    const fresh = await this.usersService.findOneOrThrow(user.id);
+
+    this.safeSendLogin(
+      fresh.email,
+      fresh.name ?? fresh.username ?? undefined,
+    );
 
     const token = await this.generateToken({
       sub: fresh.id,
@@ -262,34 +313,7 @@ export class AuthService {
     };
   }
 
-  /* ======= Opcional: úsalo en tu callback SSO (Auth0) =======
-   * Ejemplo (pseudocódigo):
-   *   const user = await authService.validateUser(req.oidc.user);
-   *   if (isNewUser) await authService.sendWelcomeForSso(user);
-   *   else await authService.sendLoginForSso(user);
-   */
-  async sendWelcomeForSso(user: {
-    email?: string | null;
-    name?: string | null;
-    username?: string | null;
-  }) {
-    await this.safeSendWelcome(
-      user.email,
-      user.name ?? user.username ?? undefined,
-    );
-  }
-  async sendLoginForSso(user: {
-    email?: string | null;
-    name?: string | null;
-    username?: string | null;
-  }) {
-    await this.safeSendLogin(
-      user.email,
-      user.name ?? user.username ?? undefined,
-    );
-  }
-
-  /** Opcionales: refresh/revoke */
+  /* ================== Refresh/Revoke (Auth0) ================== */
   async refreshToken(
     refreshToken: string,
   ): Promise<{ accessToken: string; refreshToken: string }> {
@@ -322,5 +346,4 @@ export class AuthService {
       throw new Error('The token could not be revoked');
     }
   }
-
 }

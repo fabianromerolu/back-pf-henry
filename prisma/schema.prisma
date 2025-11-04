@@ -125,7 +125,7 @@ model User {
 
 model Pin {
   id    String  @id @default(uuid())
-  title String  @db.VarChar(120)
+
   make  String  @db.VarChar(60)
   model String  @db.VarChar(60)
   year  Int

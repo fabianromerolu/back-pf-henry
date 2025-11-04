@@ -1,5 +1,5 @@
 //src/application/users/users.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/infra/prisma/prisma.service';
 import { AppRole, Sex, User, UserStatus } from '@prisma/client';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
@@ -59,16 +59,22 @@ export class UsersService {
     return this.prisma.user.findMany();
   }
 
-  async findOne(id: string): Promise<User> {
-    const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new NotFoundException(`User #${id} not found`);
-    return user;
-  }
+  async findOneOrThrow(id: string): Promise<User> {
+  if (!id) throw new BadRequestException('User id is required');
+  const user = await this.prisma.user.findUnique({ where: { id } });
+  if (!user) throw new NotFoundException('User not found');
+  return user;
+}
 
-  async getUser(id: string): Promise<User> {
-    return this.findOne(id);
-  }
+async getUser(id: string): Promise<User> {
+  return this.findOneOrThrow(id);
+}
 
+// Si necesitas la versión nullable para ciertos flujos:
+async findOne(id: string): Promise<User | null> {
+  if (!id) throw new BadRequestException('User id is required');
+  return this.prisma.user.findUnique({ where: { id } });
+}
   async createUser(dto: any): Promise<User> {
     const { confirmPassword, ...rest } = dto ?? {};
     return this.prisma.user.create({

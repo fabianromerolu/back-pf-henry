@@ -10,7 +10,10 @@ import {
 
 export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
   {
+<<<<<<< HEAD
     title: 'Toyota Corolla 2022',
+=======
+>>>>>>> origin/develop
     make: 'Toyota',
     model: 'Corolla',
     year: 2022,
@@ -34,6 +37,7 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     description:
       'El Toyota Corolla 2022 combina eficiencia y confort en un sedán compacto ideal para la ciudad. Con su motor híbrido, ofrece un excelente rendimiento de combustible y emisiones reducidas. Cuenta con tecnología de seguridad Toyota Safety Sense y un interior espacioso con acabados de calidad. Perfecto para desplazamientos diarios y viajes cortos por la ciudad.',
     status: VehicleStatus.PUBLISHED,
+<<<<<<< HEAD
     city: 'CIUDAD DE MEXICO',
     state: 'Ciudad de México',
     country: 'México',
@@ -41,6 +45,16 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
   },
   {
     title: 'Honda CR-V 2023',
+=======
+
+    city: 'Buenos Aires',
+    state: 'Buenos Aires',
+    country: 'Argentina',
+
+    ownerId,
+  },
+  {
+>>>>>>> origin/develop
     make: 'Honda',
     model: 'CR-V',
     year: 2023,
@@ -55,14 +69,82 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     pricePerWeek: 6800,
     deposit: 3500,
     kmIncludedPerDay: 250,
+<<<<<<< HEAD
     pricePerExtraKm: 6.5,
     minHours: 3,
+=======
+    pricePerExtraKm: 0.55,
+    minHours: 1,
+    minDriverAge: 21,
+    insuranceIncluded: true,
+
+    rules: 'Devolver con tanque lleno',
+    description: 'Bajo consumo y cómodo, ideal para familias.',
+    status: VehicleStatus.PUBLISHED,
+
+    city: 'Córdoba',
+    state: 'Córdoba',
+    country: 'Argentina',
+
+    ownerId,
+  },
+  {
+    make: 'Volkswagen',
+    model: 'Golf',
+    year: 2018,
+    bodyType: BodyType.HATCHBACK,
+    category: VehicleCategory.COMPACT,
+    transmission: Transmission.AUTOMATIC,
+    fuel: FuelType.GASOLINE,
+    drivetrain: Drivetrain.FWD,
+    seats: 5,
+
+    pricePerHour: 11,
+    pricePerDay: 120,
+    pricePerWeek: 700,
+    deposit: 250,
+    kmIncludedPerDay: 220,
+    pricePerExtraKm: 0.6,
+    minHours: 1,
+    minDriverAge: 21,
+    insuranceIncluded: true,
+
+    rules: 'No mascotas',
+    description: 'Compacto, ágil y cómodo para la ciudad.',
+    status: VehicleStatus.PUBLISHED,
+
+    city: 'Rosario',
+    state: 'Santa Fe',
+    country: 'Argentina',
+
+    ownerId,
+  },
+  {
+    make: 'Ford',
+    model: 'Ranger',
+    year: 2021,
+    bodyType: BodyType.PICKUP,
+    category: VehicleCategory.PICKUP,
+    transmission: Transmission.MANUAL,
+    fuel: FuelType.DIESEL,
+    drivetrain: Drivetrain.RWD,
+    seats: 5,
+
+    pricePerHour: 18,
+    pricePerDay: 180,
+    pricePerWeek: 1000,
+    deposit: 400,
+    kmIncludedPerDay: 300,
+    pricePerExtraKm: 0.75,
+    minHours: 2,
+>>>>>>> origin/develop
     minDriverAge: 23,
     insuranceIncluded: true,
     rules: 'Devolver con tanque lleno, no mascotas sin autorización previa',
     description:
       'La Honda CR-V 2023 es un SUV familiar que ofrece espacio, confort y capacidades todo terreno. Su diseño moderno incluye características de seguridad avanzadas y un interior versátil con amplio espacio de carga. El sistema de tracción integral Real Time AWD proporciona estabilidad en diversas condiciones de manejo. Ideal para familias que buscan comodidad y seguridad en sus trayectos.',
     status: VehicleStatus.PUBLISHED,
+<<<<<<< HEAD
     city: 'GUADALAJARA',
     state: 'Jalisco',
     country: 'México',
@@ -73,6 +155,81 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     make: 'Volkswagen',
     model: 'Tiguan',
     year: 2022,
+=======
+
+    city: 'Mendoza',
+    state: 'Mendoza',
+    country: 'Argentina',
+
+    ownerId,
+  },
+  {
+    make: 'Renault',
+    model: 'Kangoo',
+    year: 2020,
+    bodyType: BodyType.VAN,
+    category: VehicleCategory.VAN,
+    transmission: Transmission.MANUAL,
+    fuel: FuelType.GASOLINE,
+    drivetrain: Drivetrain.FWD,
+    seats: 2,
+
+    pricePerHour: 14,
+    pricePerDay: 130,
+    pricePerWeek: 750,
+    deposit: 250,
+    kmIncludedPerDay: 250,
+    pricePerExtraKm: 0.5,
+    minHours: 1,
+    minDriverAge: 21,
+    insuranceIncluded: true,
+
+    rules: 'Carga máxima 750kg',
+    description: 'Espacio y rendimiento para transporte liviano.',
+    status: VehicleStatus.PUBLISHED,
+
+    city: 'La Plata',
+    state: 'Buenos Aires',
+    country: 'Argentina',
+
+    ownerId,
+  },
+  {
+    make: 'Chevrolet',
+    model: 'Cruze',
+    year: 2019,
+    bodyType: BodyType.SEDAN,
+    category: VehicleCategory.MIDSIZE,
+    transmission: Transmission.AUTOMATIC,
+    fuel: FuelType.GASOLINE,
+    drivetrain: Drivetrain.FWD,
+    seats: 5,
+
+    pricePerHour: 13,
+    pricePerDay: 125,
+    pricePerWeek: 780,
+    deposit: 250,
+    kmIncludedPerDay: 230,
+    pricePerExtraKm: 0.55,
+    minHours: 1,
+    minDriverAge: 21,
+    insuranceIncluded: true,
+
+    rules: 'No fumar dentro del vehículo',
+    description: 'Elegante, seguro y eficiente en ruta.',
+    status: VehicleStatus.PUBLISHED,
+
+    city: 'Salta',
+    state: 'Salta',
+    country: 'Argentina',
+
+    ownerId,
+  },
+  {
+    make: 'Nissan',
+    model: 'Kicks',
+    year: 2021,
+>>>>>>> origin/develop
     bodyType: BodyType.SUV,
     category: VehicleCategory.SUV,
     transmission: Transmission.AUTOMATIC,
@@ -92,6 +249,7 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     description:
       'El Volkswagen Tiguan 2022 es un SUV mediano con capacidad para 7 pasajeros, perfecto para familias numerosas. Ofrece un equilibrio perfecto entre elegancia y funcionalidad, con tecnología digital Cockpit y asistencia al conductor. Su amplio maletero y asientos abatibles lo hacen versátil para diferentes necesidades. Confortable para viajes largos y práctico para el uso diario en la ciudad.',
     status: VehicleStatus.PUBLISHED,
+<<<<<<< HEAD
     city: 'MONTERREY',
     state: 'Nuevo León',
     country: 'México',
@@ -103,6 +261,51 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     model: 'Mustang Mach-E',
     year: 2023,
     bodyType: BodyType.SUV,
+=======
+
+    city: 'San Miguel de Tucumán',
+    state: 'Tucumán',
+    country: 'Argentina',
+
+    ownerId,
+  },
+  {
+    make: 'Toyota',
+    model: 'Hilux',
+    year: 2018,
+    bodyType: BodyType.PICKUP,
+    category: VehicleCategory.PICKUP,
+    transmission: Transmission.MANUAL,
+    fuel: FuelType.DIESEL,
+    drivetrain: Drivetrain.AWD,
+    seats: 5,
+
+    pricePerHour: 20,
+    pricePerDay: 200,
+    pricePerWeek: 1200,
+    deposit: 450,
+    kmIncludedPerDay: 350,
+    pricePerExtraKm: 0.9,
+    minHours: 2,
+    minDriverAge: 25,
+    insuranceIncluded: true,
+
+    rules: 'Evitar caminos excesivamente rocosos',
+    description: 'Potencia y confiabilidad para cualquier terreno.',
+    status: VehicleStatus.PUBLISHED,
+
+    city: 'San Juan',
+    state: 'San Juan',
+    country: 'Argentina',
+
+    ownerId,
+  },
+  {
+    make: 'Tesla',
+    model: 'Model 3',
+    year: 2022,
+    bodyType: BodyType.SEDAN,
+>>>>>>> origin/develop
     category: VehicleCategory.ELECTRIC,
     transmission: Transmission.AUTOMATIC,
     fuel: FuelType.ELECTRIC,
@@ -533,6 +736,7 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     description:
       'La Nissan Frontier 2023 redefine la pickup mediana con potencia robusta y tecnología moderna. El motor V6 de 3.8L entrega 310 caballos de fuerza con transmisión automática de 9 velocidades. Sistema 4WD con modo electrónico de reducción y bloqueo del diferencial trasero. Interior renovado con pantalla táctil de 8 pulgadas y Nissan Safety Shield 360. Perfecta para quienes necesitan capacidad de trabajo sin sacrificar comodidad y características de seguridad.',
     status: VehicleStatus.PUBLISHED,
+<<<<<<< HEAD
     city: 'CANCUN',
     state: 'Quintana Roo',
     country: 'México',
@@ -596,5 +800,13 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     state: 'Jalisco',
     country: 'México',
     ownerId: ownerId,
+=======
+
+    city: 'CABA',
+    state: 'Buenos Aires',
+    country: 'Argentina',
+
+    ownerId,
+>>>>>>> origin/develop
   },
 ];

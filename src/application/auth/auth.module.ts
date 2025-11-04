@@ -1,20 +1,21 @@
 // src/application/auth/auth.module.ts
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AnyJwtGuard } from './guards/any-jwt.guard';
-import { LocalJwtStrategy } from 'src/application/auth/types/local-jwt.strategy';
+import { LocalJwtStrategy } from './types/local-jwt.strategy';
 import { JwtStrategy } from './types/jwt.strategy';
 import { RolesGuard } from './guards/roles.guard';
 import { MailerModule } from '../mailer/mailer.module';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Module({
   imports: [
-    UsersModule,
-    MailerModule, // 👈 AÑADIDO
+    forwardRef(() => UsersModule), // 👈 evita ciclo
+    MailerModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       useFactory: () => ({
@@ -24,13 +25,13 @@ import { MailerModule } from '../mailer/mailer.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [
+  providers: [AuthService, JwtStrategy, LocalJwtStrategy, AnyJwtGuard, RolesGuard, JwtAuthGuard],
+  exports: [
     AuthService,
-    JwtStrategy,
-    LocalJwtStrategy,
     AnyJwtGuard,
     RolesGuard,
+    JwtAuthGuard, // 👈 para usar el guard fuera
+    JwtModule,    // 👈 para que otros reciban JwtService
   ],
-  exports: [AuthService, AnyJwtGuard, RolesGuard],
 })
 export class AuthModule {}

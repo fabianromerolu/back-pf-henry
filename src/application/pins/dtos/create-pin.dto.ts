@@ -31,11 +31,6 @@ class PhotoInputDto {
 
 export class CreatePinDto {
   /* Identificación */
-  @ApiProperty({ example: 'Toyota Corolla 2019' })
-  @IsString()
-  @Length(2, 120)
-  title: string;
-
   @ApiProperty({ example: 'Toyota' })
   @IsString()
   @Length(1, 60)
@@ -50,7 +45,6 @@ export class CreatePinDto {
   @IsInt()
   @Min(1990)
   @Max(new Date().getFullYear() + 1)
-  // eslint-disable-next-line prettier/prettier
   year: number;
 
   @ApiPropertyOptional({ example: 'LE' })
