@@ -6,12 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/infra/prisma/prisma.service';
-import {
-  AppRole,
-  Prisma,
-  VehicleStatus,
-  User,
-} from '@prisma/client';
+import { AppRole, Prisma, VehicleStatus, User } from '@prisma/client';
 import { CreatePinDto } from './dtos/create-pin.dto';
 import { UpdatePinDto } from './dtos/update-pin.dto';
 import { QueryPinsDto } from './dtos/query-pin.dto';
@@ -61,7 +56,6 @@ export class PinsService {
     if (query?.q?.trim()) {
       const q = query.q.trim();
       where.OR = [
-        { title: { contains: q, mode: 'insensitive' } },
         { make: { contains: q, mode: 'insensitive' } },
         { model: { contains: q, mode: 'insensitive' } },
         { description: { contains: q, mode: 'insensitive' } },
@@ -105,7 +99,6 @@ export class PinsService {
           fuel: true,
           seats: true,
           transmission: true,
-          description: true,
           photos: {
             where: { isCover: true },
             select: { url: true },
@@ -120,17 +113,13 @@ export class PinsService {
     return {
       data: pins.map((pin) => ({
         id: pin.id,
-        title: `${pin.make} ${pin.model}`,
+        make: pin.make,
+        model: pin.model,
         year: pin.year,
         pricePerDay: pin.pricePerDay?.toString(),
         fuel: pin.fuel,
         seats: pin.seats ?? 5,
         transmission: pin.transmission,
-        description: pin.description
-          ? pin.description.length > 100
-            ? pin.description.slice(0, 100) + '...'
-            : pin.description
-          : null,
         thumbnailUrl: pin.photos?.[0]?.url ?? null,
       })),
       page,
