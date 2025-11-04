@@ -10,7 +10,6 @@ import {
 
 export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
   {
-    title: 'Toyota Corolla 2020',
     make: 'Toyota',
     model: 'Corolla',
     year: 2020,
@@ -38,7 +37,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     ownerId,
   },
   {
-    title: 'Honda Civic 2019',
     make: 'Honda',
     model: 'Civic',
     year: 2019,
@@ -66,7 +64,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     ownerId,
   },
   {
-    title: 'Volkswagen Golf 2018',
     make: 'Volkswagen',
     model: 'Golf',
     year: 2018,
@@ -94,7 +91,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     ownerId,
   },
   {
-    title: 'Ford Ranger 2021',
     make: 'Ford',
     model: 'Ranger',
     year: 2021,
@@ -122,7 +118,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     ownerId,
   },
   {
-    title: 'Renault Kangoo 2020',
     make: 'Renault',
     model: 'Kangoo',
     year: 2020,
@@ -150,7 +145,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     ownerId,
   },
   {
-    title: 'Chevrolet Cruze 2019',
     make: 'Chevrolet',
     model: 'Cruze',
     year: 2019,
@@ -178,7 +172,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     ownerId,
   },
   {
-    title: 'Nissan Kicks 2021',
     make: 'Nissan',
     model: 'Kicks',
     year: 2021,
@@ -206,7 +199,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     ownerId,
   },
   {
-    title: 'Toyota Hilux 2018',
     make: 'Toyota',
     model: 'Hilux',
     year: 2018,
@@ -234,7 +226,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     ownerId,
   },
   {
-    title: 'Tesla Model 3 2022',
     make: 'Tesla',
     model: 'Model 3',
     year: 2022,
@@ -262,7 +253,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     ownerId,
   },
   {
-    title: 'Audi A4 2021',
     make: 'Audi',
     model: 'A4',
     year: 2021,

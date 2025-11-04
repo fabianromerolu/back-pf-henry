@@ -192,14 +192,13 @@ export class PinsService {
       throw new ForbiddenException('Only renters or admins can create vehicles');
     }
 
-    const title =
-      dto.title?.trim() ||
-      [dto.make, dto.model, dto.year].filter(Boolean).join(' ');
+    // Si te gusta tener un "título", generalo y guardalo en otro campo opcional de negocio,
+    // pero Prisma hoy NO tiene 'title', así que no lo mandamos al create.
+    // const fallbackTitle = `${dto.make} ${dto.model} ${dto.year}`;
 
-    const created = (await this.prisma.pin.create({
+    const created = await this.prisma.pin.create({
       data: {
         ...dto,
-        title,          // <-- requerido por el schema
         ownerId,
         status: VehicleStatus.DRAFT,
         photos: dto.photos?.length
@@ -215,7 +214,7 @@ export class PinsService {
         photos: true,
         owner: { select: ownerSelect },
       },
-    })) as PinWithOwnerPhotos; // <-- asegura el tipo con include
+    });
 
     await this.prisma.user.update({
       where: { id: ownerId },
@@ -224,6 +223,7 @@ export class PinsService {
 
     return created;
   }
+
 
 
   async updatePin(

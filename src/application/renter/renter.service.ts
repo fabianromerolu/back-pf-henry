@@ -42,19 +42,19 @@ export class RenterService {
         : {}),
     };
 
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.bookings.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-        include: {
-          pin: { select: { id: true, title: true, make: true, model: true } },
-          user: { select: { id: true, name: true, email: true } }, // cliente
-        },
-      }),
-      this.prisma.bookings.count({ where }),
-    ]);
+  const [items, total] = await this.prisma.$transaction([
+    this.prisma.bookings.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+      include: {
+        pin:  { select: { id: true, make: true, model: true } }, // 👈 sin 'title'
+        user: { select: { id: true, name: true, email: true } },
+      },
+    }),
+    this.prisma.bookings.count({ where }),
+  ]);
 
     return {
       data: items,
