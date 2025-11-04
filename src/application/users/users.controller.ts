@@ -13,6 +13,7 @@ import {
   ParseIntPipe,
   UseGuards,
   Req,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiOperation,
@@ -38,6 +39,7 @@ import { Roles } from 'src/application/auth/types/roles.decorator';
 import { RolesGuard } from 'src/application/auth/guards/roles.guard';
 import { AppRole, UserStatus } from '@prisma/client';
 import { PinResponseDto } from '../pins/dtos/pin-response.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Users')
 @Controller('users')
@@ -47,17 +49,14 @@ export class UsersController {
     private readonly pinsService: PinsService,
   ) {}
 
-  @UseGuards(AnyJwtGuard)
-  @ApiBearerAuth()
   @Get('me')
-  @ApiOperation({ summary: 'Get my profile' })
-  @ApiOkResponse({ type: UserResponseDto })
+  @UseGuards(JwtAuthGuard) // o tu guard que valide JWT
   async getMe(@Req() req: any) {
-    const id = req.user?.sub;
-    const user = await this.usersService.findOne(id);
-    return plainToInstance(UserResponseDto, user, {
-      excludeExtraneousValues: true,
-    });
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException('No user in token');
+    }
+    return this.usersService.findOne(userId);
   }
 
   @UseGuards(AnyJwtGuard)
