@@ -1,3 +1,4 @@
+//src/application/users/users.controller.ts
 import {
   Controller,
   Get,
@@ -166,20 +167,6 @@ export class UsersController {
   @ApiOkResponse({ type: UserResponseDto })
   async getUser(@Param('id', new ParseUUIDPipe()) id: string) {
     const user = await this.usersService.findOne(id);
-    return plainToInstance(UserResponseDto, user, {
-      excludeExtraneousValues: true,
-    });
-  }
-
-  @UseGuards(AnyJwtGuard, RolesGuard)
-  @ApiBearerAuth()
-  @Roles(AppRole.ADMIN)
-  @Post()
-  @ApiOperation({ summary: 'Create user' })
-  @ApiCreatedResponse({ type: UserResponseDto })
-  @ApiBadRequestResponse()
-  async createUser(@Body() dto: CreateUserDto) {
-    const user = await this.usersService.createUser(dto);
     return plainToInstance(UserResponseDto, user, {
       excludeExtraneousValues: true,
     });

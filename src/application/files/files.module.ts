@@ -4,7 +4,7 @@ import { CloudinaryService } from './cloudinary.service';
 import { FilesController } from './files.controller';
 
 @Module({
-  imports: [], // ⬅️ quitamos AuthModule para romper el ciclo
+  imports: [],
   controllers: [FilesController],
   providers: [FilesService, CloudinaryService],
   exports: [FilesService, CloudinaryService],

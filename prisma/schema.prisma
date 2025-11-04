@@ -4,8 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider   = "postgresql"
-  url        = env("DATABASE_URL")
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
   relationMode = "foreignKeys"
 }
 
@@ -81,110 +81,111 @@ enum Drivetrain {
 }
 
 model User {
-  id              String      @id @default(uuid())
-  email           String      @unique @db.VarChar(120)
-  name            String?     @db.VarChar(50)
-  username        String      @db.VarChar(50)
-  auth0Id         String?     @unique
+  id              String    @id @default(uuid())
+  email           String    @unique @db.VarChar(120)
+  name            String?   @db.VarChar(50)
+  username        String    @db.VarChar(50)
+  auth0Id         String?   @unique
   password        String?
-  isAdmin         Boolean     @default(false)
-  role            AppRole     @default(USER)
-  isEmailVerified Boolean     @default(false)
-  lastLoginAt     DateTime?   @db.Timestamptz(6)
+  isAdmin         Boolean   @default(false)
+  role            AppRole   @default(USER)
+  isEmailVerified Boolean   @default(false)
+  lastLoginAt     DateTime? @db.Timestamptz(6)
 
-  sex             Sex         @default(undisclosed)
-  city            String?     @db.VarChar(80)
-  state           String?     @db.VarChar(80)
-  country         String?     @db.VarChar(80)
-  birthDate       DateTime?   @db.Date
-  documentType    String?     @db.VarChar(30)
-  documentNumber  String?     @db.VarChar(60)
-  address         String?     @db.VarChar(120)
-  phone           String?     @db.VarChar(20)
-  profilePicture  String?
-  biography       String?     @db.VarChar(150)
+  sex            Sex       @default(undisclosed)
+  city           String?   @db.VarChar(80)
+  state          String?   @db.VarChar(80)
+  country        String?   @db.VarChar(80)
+  birthDate      DateTime? @db.Date
+  documentType   String?   @db.VarChar(30)
+  documentNumber String?   @db.VarChar(60)
+  address        String?   @db.VarChar(120)
+  phone          String?   @db.VarChar(20)
+  profilePicture String?
+  biography      String?   @db.VarChar(150)
 
-  status          UserStatus  @default(active)
-  pinsCount       Int         @default(0)
-  blockedReason   String?
+  status        UserStatus @default(active)
+  pinsCount     Int        @default(0)
+  blockedReason String?
 
-  pins            Pin[]
+  pins Pin[]
 
-  createdAt       DateTime    @default(now()) @db.Timestamptz(6)
-  updatedAt       DateTime    @updatedAt @db.Timestamptz(6)
-  deletedAt       DateTime?   @db.Timestamptz(6)
+  walletTransactions WalletTransaction[]
+  payouts            Payout[]
 
-  bookings        Bookings[]  @relation("UserBookings")
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt DateTime? @db.Timestamptz(6)
 
+  bookings Bookings[] @relation("UserBookings")
 
   @@index([role, status])
   @@index([city])
 }
 
 model Pin {
-  id                String          @id @default(uuid())
-  title             String          @db.VarChar(120)
-  make              String          @db.VarChar(60)
-  model             String          @db.VarChar(60)
-  year              Int
-  trim              String?         @db.VarChar(60)
+  id    String  @id @default(uuid())
+  title String  @db.VarChar(120)
+  make  String  @db.VarChar(60)
+  model String  @db.VarChar(60)
+  year  Int
+  trim  String? @db.VarChar(60)
 
-  bodyType          BodyType
-  category          VehicleCategory
-  transmission      Transmission
-  fuel              FuelType
-  drivetrain        Drivetrain?
-  color             String?         @db.VarChar(40)
-  seats             Int?            @default(5)
+  bodyType     BodyType
+  category     VehicleCategory
+  transmission Transmission
+  fuel         FuelType
+  drivetrain   Drivetrain?
+  color        String?         @db.VarChar(40)
+  seats        Int?            @default(5)
 
+  licensePlate String? @db.VarChar(20)
+  vin          String? @db.VarChar(30)
 
-  licensePlate      String?         @db.VarChar(20)
-  vin               String?         @db.VarChar(30)
+  city    String   @db.VarChar(80)
+  state   String   @db.VarChar(80)
+  country String   @db.VarChar(80)
+  lat     Decimal? @db.Decimal(10, 6)
+  lng     Decimal? @db.Decimal(10, 6)
 
-  city              String          @db.VarChar(80)
-  state             String          @db.VarChar(80)
-  country           String          @db.VarChar(80)
-  lat               Decimal?        @db.Decimal(10, 6)
-  lng               Decimal?        @db.Decimal(10, 6)
-
-  pricePerHour      Decimal         @default(0) @db.Decimal(12, 2)
-  pricePerDay       Decimal         @default(0) @db.Decimal(12, 2)
-  pricePerWeek      Decimal         @default(0) @db.Decimal(12, 2)
-  deposit           Decimal         @default(0) @db.Decimal(12, 2)
-  kmIncludedPerDay  Int             @default(0)
-  pricePerExtraKm   Decimal         @default(0) @db.Decimal(12, 2)
-  minHours          Int             @default(1)
-  minDriverAge      Int             @default(18)
-  insuranceIncluded Boolean         @default(true)
+  pricePerHour      Decimal @default(0) @db.Decimal(12, 2)
+  pricePerDay       Decimal @default(0) @db.Decimal(12, 2)
+  pricePerWeek      Decimal @default(0) @db.Decimal(12, 2)
+  deposit           Decimal @default(0) @db.Decimal(12, 2)
+  kmIncludedPerDay  Int     @default(0)
+  pricePerExtraKm   Decimal @default(0) @db.Decimal(12, 2)
+  minHours          Int     @default(1)
+  minDriverAge      Int     @default(18)
+  insuranceIncluded Boolean @default(true)
   rules             String?
 
-  description       String?
-  photos            PinPhoto[]
+  description String?
+  photos      PinPhoto[]
 
-  status            VehicleStatus   @default(DRAFT)
-  viewsCount        Int             @default(0)
-  favoritesCount    Int             @default(0)
-  bookingsCount     Int             @default(0)
+  status         VehicleStatus @default(DRAFT)
+  viewsCount     Int           @default(0)
+  favoritesCount Int           @default(0)
+  bookingsCount  Int           @default(0)
 
-  ownerId           String
-  owner             User            @relation(fields: [ownerId], references: [id], onDelete: Restrict)
-  bookings          Bookings[]      @relation("PinBookings")
+  ownerId  String
+  owner    User       @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  bookings Bookings[] @relation("PinBookings")
 
-  createdAt         DateTime        @default(now()) @db.Timestamptz(6)
-  updatedAt         DateTime        @updatedAt @db.Timestamptz(6)
-  deletedAt         DateTime?       @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt DateTime? @db.Timestamptz(6)
 
   @@index([status, city, category])
   @@index([ownerId, status])
 }
 
 model PinPhoto {
-  id        String   @id @default(uuid())
-  url       String   @db.Text
-  isCover   Boolean  @default(false)
+  id      String  @id @default(uuid())
+  url     String  @db.Text
+  isCover Boolean @default(false)
 
-  pinId     String
-  pin       Pin      @relation(fields: [pinId], references: [id], onDelete: Cascade)
+  pinId String
+  pin   Pin    @relation(fields: [pinId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now()) @db.Timestamptz(6)
 
@@ -192,29 +193,63 @@ model PinPhoto {
 }
 
 model File {
-  id       Int     @id @default(autoincrement())
+  id       Int    @id @default(autoincrement())
   fileName String
   mimeType String
   url      String
 }
 
 model Bookings {
-  id           String          @id @default(uuid())
+  id String @id @default(uuid())
 
-  startDate    DateTime        @db.Timestamptz(6)
-  endDate      DateTime        @db.Timestamptz(6)
-  status       BookingsStatus  @default(active)
-  totalPrice   Decimal         @db.Decimal(10, 2)
+  startDate  DateTime       @db.Timestamptz(6)
+  endDate    DateTime       @db.Timestamptz(6)
+  status     BookingsStatus @default(active)
+  totalPrice Decimal        @db.Decimal(10, 2)
 
-  paymentStatus  String?   @default("UNPAID")
-  paymentId      String?
+  currency     String  @default("COP")
+  platformFee  Decimal @default(0) @db.Decimal(12, 2)
+  ownerEarning Decimal @default(0) @db.Decimal(12, 2)
 
-  createdAt    DateTime        @default(now()) @db.Timestamptz(6)
-  updateAt     DateTime?       @db.Timestamptz(6)
-  deletedAt    DateTime?       @db.Timestamptz(6)
+  paymentStatus String? @default("UNPAID")
+  paymentId     String?
 
-  userId       String
-  user         User            @relation("UserBookings", fields: [userId], references:[id])
-  pinId        String
-  pin          Pin             @relation("PinBookings", fields: [pinId], references:[id])
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updateAt  DateTime? @db.Timestamptz(6)
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  userId String
+  user   User   @relation("UserBookings", fields: [userId], references: [id])
+  pinId  String
+  pin    Pin    @relation("PinBookings", fields: [pinId], references: [id])
+
+  @@index([userId])
+  @@index([pinId])
+}
+
+model WalletTransaction {
+  id          String    @id @default(uuid())
+  ownerId     String
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  bookingId   String?
+  type        String // 'CREDIT' | 'DEBIT'
+  amount      Decimal   @db.Decimal(12, 2)
+  currency    String    @default("COP")
+  status      String    @default("AVAILABLE") // 'PENDING' | 'AVAILABLE' | 'PAID'
+  availableAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([ownerId, status])
+  @@index([bookingId])
+}
+
+model Payout {
+  id        String    @id @default(uuid())
+  ownerId   String
+  owner     User      @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  amount    Decimal   @db.Decimal(12, 2)
+  currency  String    @default("COP")
+  status    String    @default("REQUESTED") // 'REQUESTED'|'PROCESSING'|'PAID'|'FAILED'
+  createdAt DateTime  @default(now())
+  paidAt    DateTime?
 }

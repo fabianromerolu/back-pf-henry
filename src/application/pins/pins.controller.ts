@@ -1,3 +1,4 @@
+//src/application/pins/pins.controller.ts
 import {
   Body,
   Controller,

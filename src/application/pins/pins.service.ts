@@ -1,3 +1,4 @@
+//src/application/pins/pins.service.ts
 import {
   BadRequestException,
   ForbiddenException,
@@ -10,17 +11,12 @@ import {
   Prisma,
   VehicleStatus,
   User,
-  Transmission,
-  FuelType,
-  BodyType,
-  VehicleCategory,
-  Drivetrain,
 } from '@prisma/client';
 import { CreatePinDto } from './dtos/create-pin.dto';
 import { UpdatePinDto } from './dtos/update-pin.dto';
 import { QueryPinsDto } from './dtos/query-pin.dto';
-import { Decimal } from '@prisma/client/runtime/library';
 import { PinDetailResponseDto } from './dtos/pin-detail-response.dto';
+import { makePinsData } from './makePinsData';
 
 type ListQuery = { q?: string; page?: number; limit?: number };
 
@@ -367,7 +363,7 @@ export class PinsService {
 
   async seedPins() {
     const existing = await this.prisma.pin.findFirst({
-      where: { status: 'PUBLISHED' },
+      where: { status: VehicleStatus.PUBLISHED }, // 👈 mejor enum que string
     });
 
     if (existing) {
@@ -386,338 +382,19 @@ export class PinsService {
       },
     });
 
-    const pinsData: Prisma.PinUncheckedCreateInput[] = [
-      {
-        title: 'Toyota Corolla 2020',
-        make: 'Toyota',
-        model: 'Corolla',
-        year: 2020,
-        bodyType: BodyType.SEDAN,
-        category: VehicleCategory.COMPACT,
-        transmission: Transmission.AUTOMATIC,
-        fuel: FuelType.DIESEL,
-        drivetrain: Drivetrain.RWD,
-        seats: 5,
+    // ✅ genera los datos con el ownerId correcto
+    const pinsData = makePinsData(owner.id);
 
-        pricePerHour: 10,
-        pricePerDay: 100,
-        pricePerWeek: 600,
-        deposit: 200,
-        kmIncludedPerDay: 200,
-        pricePerExtraKm: 0.5,
-        minHours: 1,
-        minDriverAge: 21,
-        insuranceIncluded: true,
-
-        rules: 'No fumar dentro del vehículo',
-        description: 'Confortable y económico para viajes urbanos.',
-        status: VehicleStatus.PUBLISHED,
-
-        city: 'Buenos Aires',
-        state: 'Buenos Aires',
-        country: 'Argentina',
-
-        ownerId: owner.id,
-      },
-      {
-        title: 'Honda Civic 2019',
-        make: 'Honda',
-        model: 'Civic',
-        year: 2019,
-        bodyType: BodyType.SEDAN,
-        category: VehicleCategory.COMPACT,
-        transmission: Transmission.AUTOMATIC,
-        fuel: FuelType.DIESEL,
-        drivetrain: Drivetrain.AWD,
-        seats: 5,
-
-        pricePerHour: 12,
-        pricePerDay: 110,
-        pricePerWeek: 650,
-        deposit: 220,
-        kmIncludedPerDay: 250,
-        pricePerExtraKm: 0.55,
-        minHours: 1,
-        minDriverAge: 21,
-        insuranceIncluded: true,
-
-        rules: 'Devolver con tanque lleno',
-        description: 'Bajo consumo y cómodo, ideal para familias.',
-        status: VehicleStatus.PUBLISHED,
-
-        city: 'Córdoba',
-        state: 'Córdoba',
-        country: 'Argentina',
-
-        ownerId: owner.id,
-      },
-      {
-        title: 'Volkswagen Golf 2018',
-        make: 'Volkswagen',
-        model: 'Golf',
-        year: 2018,
-        bodyType: BodyType.HATCHBACK,
-        category: VehicleCategory.COMPACT,
-        transmission: Transmission.AUTOMATIC,
-        fuel: FuelType.GASOLINE,
-        drivetrain: Drivetrain.FWD,
-        seats: 5,
-
-        pricePerHour: 11,
-        pricePerDay: 120,
-        pricePerWeek: 700,
-        deposit: 250,
-        kmIncludedPerDay: 220,
-        pricePerExtraKm: 0.6,
-        minHours: 1,
-        minDriverAge: 21,
-        insuranceIncluded: true,
-
-        rules: 'No mascotas',
-        description: 'Compacto, ágil y cómodo para la ciudad.',
-        status: VehicleStatus.PUBLISHED,
-
-        city: 'Rosario',
-        state: 'Santa Fe',
-        country: 'Argentina',
-
-        ownerId: owner.id,
-      },
-      {
-        title: 'Ford Ranger 2021',
-        make: 'Ford',
-        model: 'Ranger',
-        year: 2021,
-        bodyType: BodyType.PICKUP,
-        category: VehicleCategory.PICKUP,
-        transmission: Transmission.MANUAL,
-        fuel: FuelType.DIESEL,
-        drivetrain: Drivetrain.RWD,
-        seats: 5,
-
-        pricePerHour: 18,
-        pricePerDay: 180,
-        pricePerWeek: 1000,
-        deposit: 400,
-        kmIncludedPerDay: 300,
-        pricePerExtraKm: 0.75,
-        minHours: 2,
-        minDriverAge: 23,
-        insuranceIncluded: true,
-
-        rules: 'Prohibido uso off-road extremo',
-        description: 'Ideal para trabajos y caminos difíciles.',
-        status: VehicleStatus.PUBLISHED,
-
-        city: 'Mendoza',
-        state: 'Mendoza',
-        country: 'Argentina',
-
-        ownerId: owner.id,
-      },
-      {
-        title: 'Renault Kangoo 2020',
-        make: 'Renault',
-        model: 'Kangoo',
-        year: 2020,
-        bodyType: BodyType.VAN,
-        category: VehicleCategory.VAN,
-        transmission: Transmission.MANUAL,
-        fuel: FuelType.GASOLINE,
-        drivetrain: Drivetrain.FWD,
-        seats: 2,
-
-        pricePerHour: 14,
-        pricePerDay: 130,
-        pricePerWeek: 750,
-        deposit: 250,
-        kmIncludedPerDay: 250,
-        pricePerExtraKm: 0.5,
-        minHours: 1,
-        minDriverAge: 21,
-        insuranceIncluded: true,
-
-        rules: 'Carga máxima 750kg',
-        description: 'Espacio y rendimiento para transporte liviano.',
-        status: VehicleStatus.PUBLISHED,
-
-        city: 'La Plata',
-        state: 'Buenos Aires',
-        country: 'Argentina',
-
-        ownerId: owner.id,
-      },
-      {
-        title: 'Chevrolet Cruze 2019',
-        make: 'Chevrolet',
-        model: 'Cruze',
-        year: 2019,
-        bodyType: BodyType.SEDAN,
-        category: VehicleCategory.MIDSIZE,
-        transmission: Transmission.AUTOMATIC,
-        fuel: FuelType.GASOLINE,
-        drivetrain: Drivetrain.FWD,
-        seats: 5,
-
-        pricePerHour: 13,
-        pricePerDay: 125,
-        pricePerWeek: 780,
-        deposit: 250,
-        kmIncludedPerDay: 230,
-        pricePerExtraKm: 0.55,
-        minHours: 1,
-        minDriverAge: 21,
-        insuranceIncluded: true,
-
-        rules: 'No fumar dentro del vehículo',
-        description: 'Elegante, seguro y eficiente en ruta.',
-        status: VehicleStatus.PUBLISHED,
-
-        city: 'Salta',
-        state: 'Salta',
-        country: 'Argentina',
-
-        ownerId: owner.id,
-      },
-      {
-        title: 'Nissan Kicks 2021',
-        make: 'Nissan',
-        model: 'Kicks',
-        year: 2021,
-        bodyType: BodyType.SUV,
-        category: VehicleCategory.SUV,
-        transmission: Transmission.AUTOMATIC,
-        fuel: FuelType.GASOLINE,
-        drivetrain: Drivetrain.FWD,
-        seats: 5,
-
-        pricePerHour: 16,
-        pricePerDay: 160,
-        pricePerWeek: 900,
-        deposit: 350,
-        kmIncludedPerDay: 300,
-        pricePerExtraKm: 0.7,
-        minHours: 2,
-        minDriverAge: 23,
-        insuranceIncluded: true,
-
-        rules: 'Prohibido off-road extremo',
-        description: 'SUV moderna, ideal para viajes largos.',
-        status: VehicleStatus.PUBLISHED,
-
-        city: 'San Miguel de Tucumán',
-        state: 'Tucumán',
-        country: 'Argentina',
-
-        ownerId: owner.id,
-      },
-      {
-        title: 'Toyota Hilux 2018',
-        make: 'Toyota',
-        model: 'Hilux',
-        year: 2018,
-        bodyType: BodyType.PICKUP,
-        category: VehicleCategory.PICKUP,
-        transmission: Transmission.MANUAL,
-        fuel: FuelType.DIESEL,
-        drivetrain: Drivetrain.AWD,
-        seats: 5,
-
-        pricePerHour: 20,
-        pricePerDay: 200,
-        pricePerWeek: 1200,
-        deposit: 450,
-        kmIncludedPerDay: 350,
-        pricePerExtraKm: 0.9,
-        minHours: 2,
-        minDriverAge: 25,
-        insuranceIncluded: true,
-
-        rules: 'Evitar caminos excesivamente rocosos',
-        description: 'Potencia y confiabilidad para cualquier terreno.',
-        status: VehicleStatus.PUBLISHED,
-
-        city: 'San Juan',
-        state: 'San Juan',
-        country: 'Argentina',
-
-        ownerId: owner.id,
-      },
-      {
-        title: 'Tesla Model 3 2022',
-        make: 'Tesla',
-        model: 'Model 3',
-        year: 2022,
-        bodyType: BodyType.SEDAN,
-        category: VehicleCategory.ELECTRIC,
-        transmission: Transmission.AUTOMATIC,
-        fuel: FuelType.ELECTRIC,
-        drivetrain: Drivetrain.RWD,
-        seats: 5,
-
-        pricePerHour: 22,
-        pricePerDay: 220,
-        pricePerWeek: 1350,
-        deposit: 600,
-        kmIncludedPerDay: 300,
-        pricePerExtraKm: 0.8,
-        minHours: 2,
-        minDriverAge: 25,
-        insuranceIncluded: true,
-
-        rules: 'Cargar en estaciones aprobadas',
-        description: 'Tecnología avanzada, conducción silenciosa.',
-        status: VehicleStatus.PUBLISHED,
-
-        city: 'Buenos Aires',
-        state: 'Buenos Aires',
-        country: 'Argentina',
-
-        ownerId: owner.id,
-      },
-      {
-        title: 'Audi A4 2021',
-        make: 'Audi',
-        model: 'A4',
-        year: 2021,
-        bodyType: BodyType.SEDAN,
-        category: VehicleCategory.PREMIUM,
-        transmission: Transmission.AUTOMATIC,
-        fuel: FuelType.GASOLINE,
-        drivetrain: Drivetrain.AWD,
-        seats: 5,
-
-        pricePerHour: 26,
-        pricePerDay: 260,
-        pricePerWeek: 1600,
-        deposit: 700,
-        kmIncludedPerDay: 350,
-        pricePerExtraKm: 1.2,
-        minHours: 2,
-        minDriverAge: 25,
-        insuranceIncluded: true,
-
-        rules: 'Solo nafta premium',
-        description: 'Lujo, confort y seguridad.',
-        status: VehicleStatus.PUBLISHED,
-
-        city: 'CABA',
-        state: 'Buenos Aires',
-        country: 'Argentina',
-
-        ownerId: owner.id,
-      },
-    ];
-    // ✅ CREA TODOS LOS PINS EN UNA SOLA OPERACIÓN
+    // ✅ crea todos los pins (sin nested writes)
     await this.prisma.pin.createMany({ data: pinsData });
 
-    // ✅ AHORA TRAEMOS LOS IDs para generar sus fotos
+    // ✅ trae los IDs (opcional: puedes filtrar por email del owner)
     const createdPins = await this.prisma.pin.findMany({
       where: { ownerId: owner.id },
       select: { id: true },
     });
 
-    // ✅ Crea fotos para cada pin
+    // ✅ crea las fotos por cada pin
     for (let i = 0; i < createdPins.length; i++) {
       await this.prisma.pinPhoto.createMany({
         data: [
@@ -734,6 +411,7 @@ export class PinsService {
         ],
       });
     }
+
     return {
       message: `✅ Seeder ejecutado correctamente → ${createdPins.length} Pins creados 🚗`,
     };

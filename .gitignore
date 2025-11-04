@@ -44,6 +44,8 @@ lerna-debug.log*
 .env.production.local
 .env.local
 .vscode
+.prettierignore
+.prettierrc
 
 # temp directory
 .temp

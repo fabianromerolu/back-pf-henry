@@ -1,3 +1,4 @@
+//user-response.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Transform } from 'class-transformer';
 import { AppRole, Sex, UserStatus } from '@prisma/client';
