@@ -30,6 +30,13 @@ class PhotoInputDto {
 }
 
 export class CreatePinDto {
+  /* Título (opcional, el servicio lo autogenera si no viene) */
+  @ApiPropertyOptional({ example: 'Toyota Corolla 2020' })
+  @IsString()
+  @Length(1, 120)
+  @IsOptional()
+  title?: string;
+
   /* Identificación */
   @ApiProperty({ example: 'Toyota' })
   @IsString()

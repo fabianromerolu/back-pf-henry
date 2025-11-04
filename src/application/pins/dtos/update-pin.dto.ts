@@ -2,7 +2,7 @@
 // src/application/pins/dtos/update-pin.dto.ts
 import { PartialType } from '@nestjs/mapped-types';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsOptional, IsString, Length } from 'class-validator';
 import { CreatePinDto } from './create-pin.dto';
 
 class PhotoUpdateDto {
@@ -21,4 +21,10 @@ export class UpdatePinDto extends PartialType(CreatePinDto) {
   @IsArray()
   @IsOptional()
   photos?: PhotoUpdateDto[];
+
+  @ApiPropertyOptional({ example: 'Toyota Corolla 2020' })
+  @IsString()
+  @Length(1, 120)
+  @IsOptional()
+  title?: string;
 }

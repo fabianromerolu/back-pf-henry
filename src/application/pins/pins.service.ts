@@ -189,14 +189,17 @@ export class PinsService {
     const owner = await this.prisma.user.findUnique({ where: { id: ownerId } });
     if (!owner) throw new NotFoundException('Owner not found');
     if (owner.role !== AppRole.RENTER && owner.role !== AppRole.ADMIN) {
-      throw new ForbiddenException(
-        'Only renters or admins can create vehicles',
-      );
+      throw new ForbiddenException('Only renters or admins can create vehicles');
     }
 
-    const created = await this.prisma.pin.create({
+    const title =
+      dto.title?.trim() ||
+      [dto.make, dto.model, dto.year].filter(Boolean).join(' ');
+
+    const created = (await this.prisma.pin.create({
       data: {
         ...dto,
+        title,          // <-- requerido por el schema
         ownerId,
         status: VehicleStatus.DRAFT,
         photos: dto.photos?.length
@@ -212,7 +215,7 @@ export class PinsService {
         photos: true,
         owner: { select: ownerSelect },
       },
-    });
+    })) as PinWithOwnerPhotos; // <-- asegura el tipo con include
 
     await this.prisma.user.update({
       where: { id: ownerId },
@@ -221,6 +224,7 @@ export class PinsService {
 
     return created;
   }
+
 
   async updatePin(
     requesterId: string,

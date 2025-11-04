@@ -10,6 +10,7 @@ import {
 
 export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
   {
+    title: 'Toyota Corolla 2020',
     make: 'Toyota',
     model: 'Corolla',
     year: 2020,
@@ -19,7 +20,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     fuel: FuelType.DIESEL,
     drivetrain: Drivetrain.RWD,
     seats: 5,
-
     pricePerHour: 10,
     pricePerDay: 100,
     pricePerWeek: 600,
@@ -29,18 +29,16 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     minHours: 1,
     minDriverAge: 21,
     insuranceIncluded: true,
-
     rules: 'No fumar dentro del vehículo',
     description: 'Confortable y económico para viajes urbanos.',
     status: VehicleStatus.PUBLISHED,
-
     city: 'Buenos Aires',
     state: 'Buenos Aires',
     country: 'Argentina',
-
     ownerId,
   },
   {
+    title: 'Honda Civic 2019',
     make: 'Honda',
     model: 'Civic',
     year: 2019,
@@ -50,7 +48,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     fuel: FuelType.DIESEL,
     drivetrain: Drivetrain.AWD,
     seats: 5,
-
     pricePerHour: 12,
     pricePerDay: 110,
     pricePerWeek: 650,
@@ -60,18 +57,16 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     minHours: 1,
     minDriverAge: 21,
     insuranceIncluded: true,
-
     rules: 'Devolver con tanque lleno',
     description: 'Bajo consumo y cómodo, ideal para familias.',
     status: VehicleStatus.PUBLISHED,
-
     city: 'Córdoba',
     state: 'Córdoba',
     country: 'Argentina',
-
     ownerId,
   },
   {
+    title: 'Volkswagen Golf 2018',
     make: 'Volkswagen',
     model: 'Golf',
     year: 2018,
@@ -81,7 +76,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     fuel: FuelType.GASOLINE,
     drivetrain: Drivetrain.FWD,
     seats: 5,
-
     pricePerHour: 11,
     pricePerDay: 120,
     pricePerWeek: 700,
@@ -91,18 +85,16 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     minHours: 1,
     minDriverAge: 21,
     insuranceIncluded: true,
-
     rules: 'No mascotas',
     description: 'Compacto, ágil y cómodo para la ciudad.',
     status: VehicleStatus.PUBLISHED,
-
     city: 'Rosario',
     state: 'Santa Fe',
     country: 'Argentina',
-
     ownerId,
   },
   {
+    title: 'Ford Ranger 2021',
     make: 'Ford',
     model: 'Ranger',
     year: 2021,
@@ -112,7 +104,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     fuel: FuelType.DIESEL,
     drivetrain: Drivetrain.RWD,
     seats: 5,
-
     pricePerHour: 18,
     pricePerDay: 180,
     pricePerWeek: 1000,
@@ -122,18 +113,16 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     minHours: 2,
     minDriverAge: 23,
     insuranceIncluded: true,
-
     rules: 'Prohibido uso off-road extremo',
     description: 'Ideal para trabajos y caminos difíciles.',
     status: VehicleStatus.PUBLISHED,
-
     city: 'Mendoza',
     state: 'Mendoza',
     country: 'Argentina',
-
     ownerId,
   },
   {
+    title: 'Renault Kangoo 2020',
     make: 'Renault',
     model: 'Kangoo',
     year: 2020,
@@ -143,7 +132,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     fuel: FuelType.GASOLINE,
     drivetrain: Drivetrain.FWD,
     seats: 2,
-
     pricePerHour: 14,
     pricePerDay: 130,
     pricePerWeek: 750,
@@ -153,18 +141,16 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     minHours: 1,
     minDriverAge: 21,
     insuranceIncluded: true,
-
     rules: 'Carga máxima 750kg',
     description: 'Espacio y rendimiento para transporte liviano.',
     status: VehicleStatus.PUBLISHED,
-
     city: 'La Plata',
     state: 'Buenos Aires',
     country: 'Argentina',
-
     ownerId,
   },
   {
+    title: 'Chevrolet Cruze 2019',
     make: 'Chevrolet',
     model: 'Cruze',
     year: 2019,
@@ -174,7 +160,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     fuel: FuelType.GASOLINE,
     drivetrain: Drivetrain.FWD,
     seats: 5,
-
     pricePerHour: 13,
     pricePerDay: 125,
     pricePerWeek: 780,
@@ -184,18 +169,16 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     minHours: 1,
     minDriverAge: 21,
     insuranceIncluded: true,
-
     rules: 'No fumar dentro del vehículo',
     description: 'Elegante, seguro y eficiente en ruta.',
     status: VehicleStatus.PUBLISHED,
-
     city: 'Salta',
     state: 'Salta',
     country: 'Argentina',
-
     ownerId,
   },
   {
+    title: 'Nissan Kicks 2021',
     make: 'Nissan',
     model: 'Kicks',
     year: 2021,
@@ -205,7 +188,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     fuel: FuelType.GASOLINE,
     drivetrain: Drivetrain.FWD,
     seats: 5,
-
     pricePerHour: 16,
     pricePerDay: 160,
     pricePerWeek: 900,
@@ -215,18 +197,16 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     minHours: 2,
     minDriverAge: 23,
     insuranceIncluded: true,
-
     rules: 'Prohibido off-road extremo',
     description: 'SUV moderna, ideal para viajes largos.',
     status: VehicleStatus.PUBLISHED,
-
     city: 'San Miguel de Tucumán',
     state: 'Tucumán',
     country: 'Argentina',
-
     ownerId,
   },
   {
+    title: 'Toyota Hilux 2018',
     make: 'Toyota',
     model: 'Hilux',
     year: 2018,
@@ -236,7 +216,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     fuel: FuelType.DIESEL,
     drivetrain: Drivetrain.AWD,
     seats: 5,
-
     pricePerHour: 20,
     pricePerDay: 200,
     pricePerWeek: 1200,
@@ -246,18 +225,16 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     minHours: 2,
     minDriverAge: 25,
     insuranceIncluded: true,
-
     rules: 'Evitar caminos excesivamente rocosos',
     description: 'Potencia y confiabilidad para cualquier terreno.',
     status: VehicleStatus.PUBLISHED,
-
     city: 'San Juan',
     state: 'San Juan',
     country: 'Argentina',
-
     ownerId,
   },
   {
+    title: 'Tesla Model 3 2022',
     make: 'Tesla',
     model: 'Model 3',
     year: 2022,
@@ -267,7 +244,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     fuel: FuelType.ELECTRIC,
     drivetrain: Drivetrain.RWD,
     seats: 5,
-
     pricePerHour: 22,
     pricePerDay: 220,
     pricePerWeek: 1350,
@@ -277,18 +253,16 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     minHours: 2,
     minDriverAge: 25,
     insuranceIncluded: true,
-
     rules: 'Cargar en estaciones aprobadas',
     description: 'Tecnología avanzada, conducción silenciosa.',
     status: VehicleStatus.PUBLISHED,
-
     city: 'Buenos Aires',
     state: 'Buenos Aires',
     country: 'Argentina',
-
     ownerId,
   },
   {
+    title: 'Audi A4 2021',
     make: 'Audi',
     model: 'A4',
     year: 2021,
@@ -298,7 +272,6 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     fuel: FuelType.GASOLINE,
     drivetrain: Drivetrain.AWD,
     seats: 5,
-
     pricePerHour: 26,
     pricePerDay: 260,
     pricePerWeek: 1600,
@@ -308,15 +281,12 @@ export const makePinsData = (ownerId: string): Prisma.PinCreateManyInput[] => [
     minHours: 2,
     minDriverAge: 25,
     insuranceIncluded: true,
-
     rules: 'Solo nafta premium',
     description: 'Lujo, confort y seguridad.',
     status: VehicleStatus.PUBLISHED,
-
     city: 'CABA',
     state: 'Buenos Aires',
     country: 'Argentina',
-
     ownerId,
   },
 ];
