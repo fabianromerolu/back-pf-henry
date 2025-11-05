@@ -129,7 +129,7 @@ export class BookingsService {
     //   data: { status: VehicleStatus.BLOCKED, updatedAt: new Date() },
     // });
 
-    return newOrder as any;
+    return newOrder;
   }
 
   async findAllByUser(
