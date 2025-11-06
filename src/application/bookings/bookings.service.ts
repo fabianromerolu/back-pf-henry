@@ -216,9 +216,10 @@ export class BookingsService {
     startDate: Date,
     endDate: Date,
   ): Promise<boolean> {
-    validateDates(startDate, endDate); //validador de
+    validateDates(startDate, endDate); //validador de fechas
 
     const overlappingBooking = await this.prisma.bookings.findFirst({
+      //validador de superposicion de fechas en ordenes activas
       where: {
         pinId: pinId,
         status: 'active',
