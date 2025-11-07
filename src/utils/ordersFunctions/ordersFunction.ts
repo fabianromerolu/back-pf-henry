@@ -1,3 +1,5 @@
+/* eslint-disable prettier/prettier */
+import { BadRequestException } from '@nestjs/common';
 import { price } from './ordersInterface';
 
 export function priceCalculator(
@@ -27,4 +29,26 @@ export function priceCalculator(
     totalWeeks * weekPrice + totalDays * dayPrice + totalHours * hourPrice;
 
   return TotalPrice;
+}
+
+export function validateDates(startDate: Date, endDate: Date) {
+  const now = new Date();
+
+  if (startDate < now) {
+    throw new BadRequestException('La fecha de inicio erronea');
+  }
+
+  if (endDate <= startDate) {
+    throw new BadRequestException('Periodo incorrecto');
+  }
+
+  const minRentalHours = 1;
+  const diffMs = endDate.getTime() - startDate.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+
+  if (diffHours < minRentalHours) {
+    throw new BadRequestException(
+      `El período mínimo de alquiler es ${minRentalHours} hora`,
+    );
+  }
 }

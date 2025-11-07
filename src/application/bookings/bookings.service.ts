@@ -6,7 +6,10 @@ import {
 } from '@nestjs/common';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { PrismaService } from 'src/infra/prisma/prisma.service';
-import { priceCalculator } from 'src/utils/ordersFunctions/ordersFunction';
+import {
+  priceCalculator,
+  validateDates,
+} from 'src/utils/ordersFunctions/ordersFunction';
 //import { price } from 'src/utils/ordersFunctions/ordersInterface';
 import { Bookings, BookingsStatus, VehicleStatus } from '@prisma/client';
 import { bookingDto, BookingsResponseDto } from './dto/booking.dto';
@@ -80,6 +83,17 @@ export class BookingsService {
     if (!vehicle) throw new BadRequestException('Vehiculo no encotrado');
     if (vehicle.status !== VehicleStatus.PUBLISHED) {
       throw new BadRequestException('El vehículo no está disponible');
+    }
+
+    //verificacion de fechas y validacion de disponibilidad
+    const availability: boolean = await this.checkAvailability(
+      createBooking.pinId,
+      createBooking.start_date,
+      createBooking.end_date,
+    );
+
+    if (!availability) {
+      throw new BadRequestException('Periodo no valido');
     }
 
     const prices = {
@@ -193,5 +207,45 @@ export class BookingsService {
     }
 
     return booking;
+  }
+
+  //funciones extras
+
+  async checkAvailability(
+    pinId: string,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<boolean> {
+    validateDates(startDate, endDate); //validador de fechas
+
+    const overlappingBooking = await this.prisma.bookings.findFirst({
+      //validador de superposicion de fechas en ordenes activas
+      where: {
+        pinId: pinId,
+        status: 'active',
+        OR: [
+          {
+            startDate: { lte: startDate },
+            endDate: { gte: startDate },
+          },
+
+          {
+            startDate: { lte: endDate },
+            endDate: { gte: endDate },
+          },
+
+          {
+            startDate: { gte: startDate },
+            endDate: { lte: endDate },
+          },
+        ],
+      },
+    });
+
+    if (overlappingBooking) {
+      return false;
+    }
+
+    return true;
   }
 }
