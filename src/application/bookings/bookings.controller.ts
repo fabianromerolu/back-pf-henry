@@ -47,7 +47,7 @@ export class BookingsController {
     type: BookingsResponseDto,
   })
   findAll(
-    @CurrentUser() user: UserPayloadInterface,
+    //@CurrentUser() user: UserPayloadInterface,
     @Query() query: BookingQueryDto,
   ) {
     return this.bookingsService.findAllByUser(user.id, query.page, query.limit);
