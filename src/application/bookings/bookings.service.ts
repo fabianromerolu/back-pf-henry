@@ -131,10 +131,10 @@ export class BookingsService {
       },
     });
 
-    // await this.prisma.pin.update({
-    //   where: { id: vehicle.id },
-    //   data: { status: VehicleStatus.BLOCKED, updatedAt: new Date() },
-    // });
+    await this.prisma.pin.update({
+      where: { id: vehicle.id },
+      data: { bookingsCount: { increment: 1 }, updatedAt: new Date() },
+    });
 
     return newOrder;
   }
