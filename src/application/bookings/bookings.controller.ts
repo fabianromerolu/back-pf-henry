@@ -16,7 +16,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { bookingDto, BookingsResponseDto } from './dto/booking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserPayloadInterface } from './interfaces/bookingsInterface';
-import { BookingQueryDto } from './dto/booking-query.dto';
+import { BookingsQueryDto } from './dto/booking-query.dto';
 
 @Controller('bookings') //se colocan los guardianes solo en algunos endpoints, una vez probados los mismos se procedera a los resguardos
 export class BookingsController {
@@ -47,10 +47,10 @@ export class BookingsController {
     type: BookingsResponseDto,
   })
   findAll(
-    @CurrentUser() user: UserPayloadInterface,
-    @Query() query: BookingQueryDto,
+    //@CurrentUser() user: UserPayloadInterface,
+    @Query() query: BookingsQueryDto,
   ) {
-    return this.bookingsService.findAllByUser(user.id, query.page, query.limit);
+    return this.bookingsService.findAllByUser(query);
   }
 
   @Get(':id')
@@ -63,9 +63,9 @@ export class BookingsController {
   })
   async findOne(
     @Param('id') id: string,
-    @CurrentUser() user: UserPayloadInterface,
+    //   @CurrentUser() user: UserPayloadInterface,
   ): Promise<bookingDto> {
-    return this.bookingsService.findOne(id, user.id);
+    return this.bookingsService.findOne(id);
   }
 
   // ✅ Mover la lógica de completar/cancelar al service
