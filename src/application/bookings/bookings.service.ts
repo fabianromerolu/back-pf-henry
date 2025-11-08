@@ -14,6 +14,7 @@ import {
 import { Bookings, BookingsStatus, VehicleStatus } from '@prisma/client';
 import { bookingDto, BookingsResponseDto } from './dto/booking.dto';
 import { UserPayloadInterface } from './interfaces/bookingsInterface';
+import { BookingsQueryDto } from './dto/booking-query.dto';
 
 @Injectable()
 export class BookingsService {
@@ -138,11 +139,41 @@ export class BookingsService {
     return newOrder;
   }
 
-  async findAllByUser(
-    userId: string,
-    page: number,
-    limit: number,
-  ): Promise<BookingsResponseDto> {
+  async findAllByUser(filtros: BookingsQueryDto): Promise<BookingsResponseDto> {
+    const {
+      page,
+      limit,
+      userId,
+      status,
+      pinId,
+      paymentStatus,
+      createdAtFrom,
+      createdAtTo,
+      startDateFrom,
+      startDateTo,
+    } = filtros;
+
+    const where: any = {};
+
+    if (userId) where.userId = userId;
+    if (status) where.status = status;
+    if (pinId) where.pinId = pinId;
+    if (paymentStatus) where.paymentStatus = paymentStatus;
+
+    // Filtro por fechas de creación
+    if (createdAtFrom || createdAtTo) {
+      where.createdAt = {};
+      if (createdAtFrom) where.createdAt.gte = new Date(createdAtFrom);
+      if (createdAtTo) where.createdAt.lte = new Date(createdAtTo);
+    }
+
+    // Filtro por fechas de inicio de reserva
+    if (startDateFrom || startDateTo) {
+      where.startDate = {};
+      if (startDateFrom) where.startDate.gte = new Date(startDateFrom);
+      if (startDateTo) where.startDate.lte = new Date(startDateTo);
+    }
+
     const validPage = isNaN(page) || page < 1 ? 1 : page;
     const validLimit = isNaN(limit) || limit < 1 ? 10 : Math.min(limit, 100);
 
@@ -150,17 +181,16 @@ export class BookingsService {
 
     const [bookings, total] = await Promise.all([
       this.prisma.bookings.findMany({
-        where: { userId },
+        where,
         include: {
-          pin: {
+          user: {
             select: {
               id: true,
-              model: true,
-              pricePerDay: true,
-              pricePerHour: true,
-              pricePerWeek: true,
+              name: true,
+              email: true,
             },
           },
+          pin: true,
         },
         orderBy: { createdAt: 'desc' },
         skip,

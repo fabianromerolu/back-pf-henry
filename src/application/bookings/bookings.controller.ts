@@ -16,7 +16,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { bookingDto, BookingsResponseDto } from './dto/booking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserPayloadInterface } from './interfaces/bookingsInterface';
-import { BookingQueryDto } from './dto/booking-query.dto';
+import { BookingsQueryDto } from './dto/booking-query.dto';
 
 @Controller('bookings') //se colocan los guardianes solo en algunos endpoints, una vez probados los mismos se procedera a los resguardos
 export class BookingsController {
@@ -48,9 +48,9 @@ export class BookingsController {
   })
   findAll(
     //@CurrentUser() user: UserPayloadInterface,
-    @Query() query: BookingQueryDto,
+    @Query() query: BookingsQueryDto,
   ) {
-    return this.bookingsService.findAllByUser(user.id, query.page, query.limit);
+    return this.bookingsService.findAllByUser(query);
   }
 
   @Get(':id')
