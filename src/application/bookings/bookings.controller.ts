@@ -63,9 +63,9 @@ export class BookingsController {
   })
   async findOne(
     @Param('id') id: string,
-    @CurrentUser() user: UserPayloadInterface,
+    //   @CurrentUser() user: UserPayloadInterface,
   ): Promise<bookingDto> {
-    return this.bookingsService.findOne(id, user.id);
+    return this.bookingsService.findOne(id);
   }
 
   // ✅ Mover la lógica de completar/cancelar al service

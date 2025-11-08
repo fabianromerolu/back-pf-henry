@@ -214,11 +214,10 @@ export class BookingsService {
     };
   }
 
-  async findOne(bookingId: string, userId: string): Promise<bookingDto> {
+  async findOne(bookingId: string): Promise<bookingDto> {
     const booking = await this.prisma.bookings.findFirst({
       where: {
         id: bookingId,
-        userId: userId,
       },
       include: {
         pin: true,
