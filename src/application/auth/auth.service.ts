@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import axios from 'axios';
 import * as bcrypt from 'bcryptjs';
 import { MailerService } from '../mailer/mailer.service';
+import { CouponsService } from '../coupons/coupons.service';
 
 type AppRole = 'ADMIN' | 'RENTER' | 'USER';
 
@@ -43,6 +44,8 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly mailer: MailerService,
+    private readonly couponsService: CouponsService, // 👈 nuevo
+
   ) {}
 
   /* ================== Helpers correo ================== */
@@ -200,6 +203,12 @@ export class AuthService {
       user = await this.usersService.findOneOrThrow(user.id);
     }
 
+     // 🚀 NUEVO: si el usuario fue creado, generar cupón de bienvenida
+    if (created) {
+      await this.couponsService.createWelcomeCoupon(user.id);
+    }
+
+
     return { user, created };
   }
 
@@ -258,6 +267,15 @@ export class AuthService {
       password: hashed,
       role,
     } as any);
+      
+     // 🦖 NUEVO: generar cupón de bienvenida al registrarse y enviarlo por correo
+    const coupon = await this.couponsService.createWelcomeCoupon(user.id);
+    await this.mailer.sendCouponEmail(user.email, coupon.code, coupon.discountPct);
+
+
+        // 🚀 NUEVO: generar cupón de bienvenida al registrarse
+    await this.couponsService.createWelcomeCoupon(user.id);
+
 
     this.safeSendWelcome(user.email, user.name ?? user.username ?? undefined);
 
