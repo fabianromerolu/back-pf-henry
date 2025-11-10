@@ -1,3 +1,4 @@
+//src/application/renter/renter.controller.ts
 import { Controller, Get, Query, UseGuards, Body, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RenterService } from './renter.service';

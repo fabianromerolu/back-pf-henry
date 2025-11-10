@@ -1,3 +1,4 @@
+//src/appication/renter/renter.service.ts
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/infra/prisma/prisma.service';
 import { BookingsStatus } from '@prisma/client';

@@ -11,6 +11,7 @@ import { MailerModule } from './application/mailer/mailer.module';
 import { BookingsModule } from './application/bookings/bookings.module';
 import { PaymentsModule } from './application/payments/payments.module';
 
+import { AdminModule } from './application/admin/admin.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env'] }),
@@ -22,6 +23,7 @@ import { PaymentsModule } from './application/payments/payments.module';
     MailerModule,
     BookingsModule,
     PaymentsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
