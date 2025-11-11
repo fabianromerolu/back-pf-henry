@@ -96,4 +96,13 @@ export class MailerService {
       year: new Date().getFullYear(),
     });
   }
+   // 🚀 NUEVO: método para enviar el cupón de bienvenida
+  async sendCouponEmail(to: string, code: string, discount: number) {
+    return this.sendTemplateMail(to, 'Tu cupón de bienvenida', 'coupon', {
+      code,
+      discount,
+      year: new Date().getFullYear(),
+    });
+  }
+
 }
