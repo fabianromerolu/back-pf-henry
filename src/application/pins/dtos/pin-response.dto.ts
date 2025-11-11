@@ -167,6 +167,8 @@ export class PinResponseDto {
   @ApiProperty() @Expose() viewsCount: number;
   @ApiProperty() @Expose() favoritesCount: number;
   @ApiProperty() @Expose() bookingsCount: number;
+  @ApiProperty({ example: 5 })
+  averageRating: number;
 
   /* Owner */
   @ApiProperty() @Expose() ownerId: string;

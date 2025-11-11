@@ -13,6 +13,7 @@ import { PaymentsModule } from './application/payments/payments.module';
 import { CouponsModule } from './application/coupons/coupons.module';
 
 import { AdminModule } from './application/admin/admin.module';
+import { ReviewsModule } from './application/reviews/reviews.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env'] }),
@@ -25,6 +26,7 @@ import { AdminModule } from './application/admin/admin.module';
     BookingsModule,
     PaymentsModule,
     CouponsModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
