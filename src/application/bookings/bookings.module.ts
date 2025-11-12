@@ -10,7 +10,7 @@ import { CouponsModule } from '../coupons/coupons.module';
     JwtModule.register({
       secret: process.env.JWT_SECRET,
     }),
-    CouponsModule
+    CouponsModule,
   ],
   controllers: [BookingsController],
   providers: [BookingsService, JwtAuthGuard],

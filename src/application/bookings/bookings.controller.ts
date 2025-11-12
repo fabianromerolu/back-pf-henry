@@ -17,12 +17,17 @@ import { bookingDto, BookingsResponseDto } from './dto/booking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserPayloadInterface } from './interfaces/bookingsInterface';
 import { BookingsQueryDto } from './dto/booking-query.dto';
+import { AppRole } from '@prisma/client';
+import { Roles } from '../auth/types/roles.decorator';
 
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 @Controller('bookings') //se colocan los guardianes solo en algunos endpoints, una vez probados los mismos se procedera a los resguardos
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
   @Post()
+  @Roles(AppRole.ADMIN, AppRole.USER)
   @HttpCode(201)
   @ApiOperation({ summary: 'Create new Order' })
   @ApiResponse({
@@ -39,6 +44,7 @@ export class BookingsController {
   }
 
   @Get()
+  @Roles(AppRole.ADMIN, AppRole.USER)
   @HttpCode(200)
   @ApiOperation({ summary: 'Obtener todas las reservas del usuario' })
   @ApiResponse({
@@ -54,6 +60,7 @@ export class BookingsController {
   }
 
   @Get(':id')
+  @Roles(AppRole.ADMIN, AppRole.USER)
   @HttpCode(200)
   @ApiOperation({ summary: 'Obtener una reserva específica' })
   @ApiResponse({
@@ -69,8 +76,6 @@ export class BookingsController {
   }
 
   // ✅ Mover la lógica de completar/cancelar al service
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @Patch(':id/complete')
   @HttpCode(200)
   @ApiOperation({ summary: 'Completar reserva (owner/admin)' })
@@ -81,8 +86,6 @@ export class BookingsController {
     return this.bookingsService.completeBooking(id, user);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @Patch(':id/cancel')
   @HttpCode(200)
   @ApiOperation({ summary: 'Cancelar reserva' })
