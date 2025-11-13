@@ -5,11 +5,9 @@ import { google } from 'googleapis';
 import * as hbs from 'handlebars';
 import * as fs from 'fs';
 import * as path from 'path';
-
 @Injectable()
 export class MailerService {
   private oAuth2Client;
-
   constructor() {
     this.oAuth2Client = new google.auth.OAuth2(
       process.env.MAILER_CLIENT_ID,
@@ -20,10 +18,8 @@ export class MailerService {
       refresh_token: process.env.MAILER_REFRESH_TOKEN,
     });
   }
-
   private async createTransporter() {
     const accessToken = await this.oAuth2Client.getAccessToken();
-
     return nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -36,8 +32,7 @@ export class MailerService {
       },
     });
   }
-
- private resolveBasePath(subfolder: 'templates' | 'assets') {
+  private resolveBasePath(subfolder: 'templates' | 'assets') {
     // __dirname es la ruta de la carpeta del archivo actual.
     // En desarrollo (ts-node): .../src/application/mailer
     // En producción (node):   .../dist/application/mailer
@@ -58,7 +53,6 @@ export class MailerService {
     const template = hbs.compile(source);
     return template(context);
   }
-
   private async sendTemplateMail(
     to: string,
     subject: string,
@@ -67,7 +61,6 @@ export class MailerService {
   ) {
     const transporter = await this.createTransporter();
     const html = this.compileTemplate(templateName, context);
-
     const mailOptions = {
       from: `Volantia <${process.env.MAILER_USER}>`,
       to,
@@ -81,10 +74,8 @@ export class MailerService {
         },
       ],
     };
-
     return transporter.sendMail(mailOptions);
   }
-
   // 👇 Métodos específicos que tu AuthService espera
   async sendWelcomeEmail(to: string, name: string) {
     return this.sendTemplateMail(to, 'Bienvenido a Volantia', 'welcome', {
@@ -93,7 +84,6 @@ export class MailerService {
       year: new Date().getFullYear(),
     });
   }
-
   async sendLoginEmail(to: string, name: string) {
     return this.sendTemplateMail(to, 'Nuevo inicio de sesión', 'login', {
       name,
@@ -101,4 +91,13 @@ export class MailerService {
       year: new Date().getFullYear(),
     });
   }
+   // 🚀 NUEVO: método para enviar el cupón de bienvenida
+  async sendCouponEmail(to: string, code: string, discount: number) {
+    return this.sendTemplateMail(to, 'Tu cupón de bienvenida', 'coupon', {
+      code,
+      discount,
+      year: new Date().getFullYear(),
+    });
+  }
+
 }
