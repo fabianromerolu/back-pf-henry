@@ -37,12 +37,17 @@ export class MailerService {
     });
   }
 
-  private resolveBasePath(subfolder: 'templates' | 'assets') {
-    // En producción apunta a dist, en desarrollo a src
-    return process.env.NODE_ENV === 'production'
-      ? path.join(__dirname, subfolder)
-      : path.join(process.cwd(), `src/application/mailer/${subfolder}`);
-  }
+ private resolveBasePath(subfolder: 'templates' | 'assets') {
+    // __dirname es la ruta de la carpeta del archivo actual.
+    // En desarrollo (ts-node): .../src/application/mailer
+    // En producción (node):   .../dist/application/mailer
+    // 
+    // Ambas carpetas (gracias al nest-cli.json) ahora contienen 
+    // las carpetas 'templates' y 'assets' junto a este archivo.
+    //
+    // Esta ÚNICA LÍNEA funciona para ambos entornos:
+    return path.join(__dirname, subfolder);
+}
 
   private compileTemplate(templateName: string, context: any): string {
     const filePath = path.join(
