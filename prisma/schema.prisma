@@ -122,10 +122,6 @@ model User {
 
   @@index([role, status])
   @@index([city])
-
-  coupons   Coupon[]   // 👈 relación hacia cupones
-  
-
 }
 
 model Pin {
@@ -233,25 +229,7 @@ model Bookings {
 
   @@index([userId])
   @@index([pinId])
-
-   coupon      Coupon?   // 👈 relación opcional a cupón
-
 }
-
-model Coupon {
-  id          String   @id @default(uuid())
-  code        String   @unique
-  discountPct Int
-  description String?
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id])
-  bookingId String?    @unique   // 👈 marcar como única
-  booking     Bookings? @relation(fields: [bookingId], references: [id])
-  createdAt   DateTime @default(now())
-  usedAt      DateTime?
-  expiresAt   DateTime?
-}
-
 
 model WalletTransaction {
   id          String    @id @default(uuid())
