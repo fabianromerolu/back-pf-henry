@@ -44,6 +44,9 @@ export class PinDetailResponseDto {
   @ApiProperty()
   country: string;
 
+  @ApiProperty()
+  averageRating: number;
+
   @ApiProperty({ nullable: true })
   rules: string | null;
 

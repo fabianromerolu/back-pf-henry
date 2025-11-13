@@ -12,6 +12,7 @@ import { BookingsModule } from './application/bookings/bookings.module';
 import { PaymentsModule } from './application/payments/payments.module';
 
 import { AdminModule } from './application/admin/admin.module';
+import { ReviewsModule } from './application/reviews/reviews.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env'] }),
@@ -24,6 +25,7 @@ import { AdminModule } from './application/admin/admin.module';
     BookingsModule,
     PaymentsModule,
     AdminModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
