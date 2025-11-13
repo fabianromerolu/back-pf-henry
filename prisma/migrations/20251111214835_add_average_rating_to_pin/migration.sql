@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Pin" ADD COLUMN     "averageRating" DOUBLE PRECISION DEFAULT 0;

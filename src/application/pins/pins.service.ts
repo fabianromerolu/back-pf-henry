@@ -99,6 +99,7 @@ export class PinsService {
           fuel: true,
           seats: true,
           transmission: true,
+          averageRating: true,
           photos: {
             where: { isCover: true },
             select: { url: true },
@@ -120,6 +121,7 @@ export class PinsService {
         fuel: pin.fuel,
         seats: pin.seats ?? 5,
         transmission: pin.transmission,
+        averageRating: pin.averageRating ?? 0,
         thumbnailUrl: pin.photos?.[0]?.url ?? null,
       })),
       page,
@@ -132,7 +134,23 @@ export class PinsService {
   async getByIdPublic(id: string): Promise<PinDetailResponseDto> {
     const pin = await this.prisma.pin.findUnique({
       where: { id, deletedAt: null },
-      include: {
+      select: {
+        id: true,
+        make: true,
+        model: true,
+        bodyType: true,
+        category: true,
+        transmission: true,
+        fuel: true,
+        seats: true,
+        pricePerDay: true,
+        city: true,
+        state: true,
+        country: true,
+        rules: true,
+        description: true,
+        status: true,
+        averageRating: true,
         photos: {
           orderBy: [{ isCover: 'desc' }, { createdAt: 'asc' }],
           select: { url: true },
@@ -160,6 +178,7 @@ export class PinsService {
       rules: pin.rules ?? null,
       description: pin.description ?? null,
       status: pin.status,
+      averageRating: Number(pin.averageRating ?? 0),
       photos: pin.photos.map((p) => ({ url: p.url })),
     };
   }
@@ -189,7 +208,9 @@ export class PinsService {
     const owner = await this.prisma.user.findUnique({ where: { id: ownerId } });
     if (!owner) throw new NotFoundException('Owner not found');
     if (owner.role !== AppRole.RENTER && owner.role !== AppRole.ADMIN) {
-      throw new ForbiddenException('Only renters or admins can create vehicles');
+      throw new ForbiddenException(
+        'Only renters or admins can create vehicles',
+      );
     }
 
     // Si te gusta tener un "título", generalo y guardalo en otro campo opcional de negocio,
@@ -223,8 +244,6 @@ export class PinsService {
 
     return created;
   }
-
-
 
   async updatePin(
     requesterId: string,

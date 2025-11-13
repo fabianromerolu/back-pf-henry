@@ -112,6 +112,7 @@ model User {
 
   walletTransactions WalletTransaction[]
   payouts            Payout[]
+  reviews            Review[]   
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt DateTime  @updatedAt @db.Timestamptz(6)
@@ -121,9 +122,6 @@ model User {
 
   @@index([role, status])
   @@index([city])
-
-  coupons   Coupon[]   // 👈 relación hacia cupones
-
 }
 
 model Pin {
@@ -169,10 +167,12 @@ model Pin {
   viewsCount     Int           @default(0)
   favoritesCount Int           @default(0)
   bookingsCount  Int           @default(0)
+  averageRating  Float?        @default(0)
 
   ownerId  String
   owner    User       @relation(fields: [ownerId], references: [id], onDelete: Restrict)
   bookings Bookings[] @relation("PinBookings")
+  reviews  Review[]
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt DateTime  @updatedAt @db.Timestamptz(6)
@@ -216,6 +216,7 @@ model Bookings {
 
   paymentStatus String? @default("UNPAID")
   paymentId     String?
+  review       Review?
 
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   updateAt  DateTime? @db.Timestamptz(6)
@@ -228,25 +229,7 @@ model Bookings {
 
   @@index([userId])
   @@index([pinId])
-
-   coupon      Coupon?   // 👈 relación opcional a cupón
-
 }
-
-model Coupon {
-  id          String   @id @default(uuid())
-  code        String   @unique
-  discountPct Int
-  description String?
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id])
-  bookingId String?    @unique   // 👈 marcar como única
-  booking     Bookings? @relation(fields: [bookingId], references: [id])
-  createdAt   DateTime @default(now())
-  usedAt      DateTime?
-  expiresAt   DateTime?
-}
-
 
 model WalletTransaction {
   id          String    @id @default(uuid())
@@ -273,4 +256,27 @@ model Payout {
   status    String    @default("REQUESTED") // 'REQUESTED'|'PROCESSING'|'PAID'|'FAILED'
   createdAt DateTime  @default(now())
   paidAt    DateTime?
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int
+  comment   String?  @db.Text
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  // Relaciones principales
+  userId  String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  pinId   String
+  pin     Pin      @relation(fields: [pinId], references: [id], onDelete: Cascade)
+
+  // Relación opcional hacia una reserva
+  bookingId String?  @unique
+  booking   Bookings? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([pinId])
+  @@index([userId])
+  @@index([bookingId])
 }
