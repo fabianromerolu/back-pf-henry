@@ -21,7 +21,9 @@ export class MailerService {
   private async createTransporter() {
     const accessToken = await this.oAuth2Client.getAccessToken();
     return nodemailer.createTransport({
-      service: 'gmail',
+      host: process.env.MAILER_HOST, // Lee 🛑 smtp.gmail.com
+      port: parseInt(process.env.MAILER_PORT || '587', 10), // Lee 🛑 587
+      secure: false, // 🛑 Necesitas forzar secure: false para el puerto 587 (TLS)
       auth: {
         type: 'OAuth2',
         user: process.env.MAILER_USER,
