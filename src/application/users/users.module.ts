@@ -10,7 +10,7 @@ import { AuthModule } from '../auth/auth.module';
   imports: [
     PinModule,
     FilesModule,
-    forwardRef(() => AuthModule), // 👈 evita ciclo
+    forwardRef(() => AuthModule),
   ],
   controllers: [UsersController],
   providers: [UsersService],

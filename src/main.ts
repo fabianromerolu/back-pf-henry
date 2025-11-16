@@ -76,7 +76,6 @@ async function bootstrap() {
 
   // 3) afterCallback: genera tu JWT, setea cookies y redirige
   const afterCb: NonNullable<ConfigParams['afterCallback']> = async (req, res, session, state: any) => {
-    // Express OIDC ya dejó al user en req.oidc.user desde el id_token
     const oidcUser = (req as any).oidc?.user as { sub?: string; email?: string; name?: string } | undefined;
 
     const sub = oidcUser?.sub;
@@ -92,6 +91,14 @@ async function bootstrap() {
 
     const { user, created } = await authService.validateUser({ sub, email, name });
     const role: AppRole = (user.role as AppRole) ?? (user.isAdmin ? 'ADMIN' : 'USER');
+
+    // ⛔ Bloquear usuarios suspendidos también en SSO
+    if (user.status === 'suspended') {
+      const url = new URL(`${frontBase()}/login`);
+      url.searchParams.set('error', 'user_suspended');
+      (req as any).openidState = { ...(req as any).openidState, returnTo: url.toString() };
+      return session;
+    }
 
     // Emails (no bloquean)
     if (created) await authService.sendWelcomeForSso(user);

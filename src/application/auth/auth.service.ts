@@ -10,6 +10,7 @@ import axios from 'axios';
 import * as bcrypt from 'bcryptjs';
 import { MailerService } from '../mailer/mailer.service';
 import { CouponsService } from '../coupons/coupons.service';
+import { UserStatus } from '@prisma/client';
 
 type AppRole = 'ADMIN' | 'RENTER' | 'USER';
 
@@ -315,8 +316,12 @@ export class AuthService {
       await this.usersService.updateUser(user.id, { role: 'ADMIN' } as any);
     }
 
-    // 👇 A partir de aquí queremos un User no-null
     const fresh = await this.usersService.findOneOrThrow(user.id);
+
+    // ⛔ Bloquear login de usuarios suspendidos
+    if (fresh.status === UserStatus.suspended) {
+      throw new UnauthorizedException('User is suspended');
+    }
 
     this.safeSendLogin(
       fresh.email,
@@ -335,6 +340,7 @@ export class AuthService {
       user: { id: fresh.id, email: fresh.email, role: fresh.role },
     };
   }
+
 
   /* ================== Refresh/Revoke (Auth0) ================== */
   async refreshToken(
