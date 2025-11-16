@@ -32,8 +32,8 @@ import { CouponsModule } from '../coupons/coupons.module';
     AuthService,
     AnyJwtGuard,
     RolesGuard,
-    JwtAuthGuard, // 👈 para usar el guard fuera
-    JwtModule,    // 👈 para que otros reciban JwtService
+    JwtAuthGuard, 
+    JwtModule,  
   ],
 })
 export class AuthModule {}

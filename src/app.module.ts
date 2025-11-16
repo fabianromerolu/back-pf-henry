@@ -1,3 +1,4 @@
+//src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './infra/prisma/prisma.module';
@@ -14,6 +15,7 @@ import { PaymentsModule } from './application/payments/payments.module';
 import { AdminModule } from './application/admin/admin.module';
 import { ReviewsModule } from './application/reviews/reviews.module';
 import { CouponsModule } from './application/coupons/coupons.module';
+import { StandardUserModule } from './application/standard-user/standard-user.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env'] }),
@@ -27,7 +29,8 @@ import { CouponsModule } from './application/coupons/coupons.module';
     PaymentsModule,
     AdminModule,
     ReviewsModule,
-    CouponsModule
+    CouponsModule,
+    StandardUserModule,
   ],
   controllers: [AppController],
   providers: [AppService],
