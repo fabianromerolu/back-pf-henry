@@ -9,7 +9,6 @@ import { JwtService } from '@nestjs/jwt';
 import axios from 'axios';
 import * as bcrypt from 'bcryptjs';
 import { MailerService } from '../mailer/mailer.service';
-import { CouponsService } from '../coupons/coupons.service';
 import { UserStatus } from '@prisma/client';
 
 type AppRole = 'ADMIN' | 'RENTER' | 'USER';
@@ -45,7 +44,6 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly mailer: MailerService,
-    private readonly couponsService: CouponsService, // 👈 nuevo
   ) {}
 
   /* ================== Helpers correo ================== */
@@ -215,12 +213,6 @@ export class AuthService {
       user = await this.usersService.findOneOrThrow(user.id);
     }
 
-    // 🦋 NUEVO: si el usuario fue creado, generar cupón y enviarlo sin romper flujo
-  if (created) {
-  const coupon = await this.couponsService.createWelcomeCoupon(user.id);
-  this.safeSendCoupon(user.email, coupon.code, coupon.discountPct);
-  }
-
     return { user, created };
   }
 
@@ -279,9 +271,6 @@ export class AuthService {
       password: hashed,
       role,
     } as any);
-    // 🐋 Generar cupón de bienvenida y enviarlo sin romper flujo
-   const coupon = await this.couponsService.createWelcomeCoupon(user.id);
-   this.safeSendCoupon(user.email, coupon.code, coupon.discountPct);
 
     this.safeSendWelcome(user.email, user.name ?? user.username ?? undefined);
 

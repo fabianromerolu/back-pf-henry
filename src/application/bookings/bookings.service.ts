@@ -15,12 +15,10 @@ import { Bookings, BookingsStatus, VehicleStatus } from '@prisma/client';
 import { bookingDto, BookingsResponseDto } from './dto/booking.dto';
 import { UserPayloadInterface } from './interfaces/bookingsInterface';
 import { BookingsQueryDto } from './dto/booking-query.dto';
-import { CouponsService } from '../coupons/coupons.service';
 
 @Injectable()
 export class BookingsService {
   constructor(private readonly prisma: PrismaService,
-      private readonly couponsService: CouponsService, // 👈 nuevo
   ) {}
 
   async completeBooking(bookingId: string, user: UserPayloadInterface) {
@@ -112,15 +110,6 @@ export class BookingsService {
       createBooking.start_date,
       createBooking.end_date,
     );
-
-    // 🚀 NUEVO: aplicar cupón de bienvenida si corresponde 
-
-   gross = await this.couponsService.applyCoupon( 
-    createBooking.userId,
-    vehicle.id, // se usa como referencia, luego se marca bookingId 
-    gross, 
-
-  );
 
     //calculos grales de impuestos comisiones etc
     const FEE = Number(process.env.PLATFORM_FEE_PCT ?? '0.15');

@@ -11,7 +11,6 @@ import { JwtStrategy } from './types/jwt.strategy';
 import { RolesGuard } from './guards/roles.guard';
 import { MailerModule } from '../mailer/mailer.module';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { CouponsModule } from '../coupons/coupons.module';
 
 @Module({
   imports: [
@@ -24,7 +23,6 @@ import { CouponsModule } from '../coupons/coupons.module';
         signOptions: { expiresIn: '60m' },
       }),
     }),
-        CouponsModule, 
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, LocalJwtStrategy, AnyJwtGuard, RolesGuard, JwtAuthGuard],
