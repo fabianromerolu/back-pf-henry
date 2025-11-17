@@ -379,7 +379,7 @@ export class PinsService {
     });
 
     if (existing) {
-      return { message: '⛔ Seeder ya ejecutado anteriormente ❌' };
+      //return { message: '⛔ Seeder ya ejecutado anteriormente ❌' };
     }
 
     const owner = await this.prisma.user.upsert({
