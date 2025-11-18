@@ -1,5 +1,13 @@
-//src/application/renter/renter.controller.ts
-import { Controller, Get, Query, UseGuards, Body, Post } from '@nestjs/common';
+// src/application/renter/renter.controller.ts
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RenterService } from './renter.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -13,6 +21,19 @@ import { BookingsStatus } from '@prisma/client';
 @Controller('renter')
 export class RenterController {
   constructor(private readonly svc: RenterService) {}
+
+  // ========= helper para extraer el userId de req.user =========
+  private getUserId(u: UserPayloadInterface): string {
+    const id =
+      (u as any).id ??
+      (u as any).userId ??
+      (u as any).sub;
+
+    if (!id) {
+      throw new BadRequestException('userId requerido');
+    }
+    return id;
+  }
 
   // Normaliza el status recibido desde el front (minúsculas) a tu enum de Prisma
   private parseStatus(s?: string): BookingsStatus | undefined {
@@ -32,25 +53,29 @@ export class RenterController {
     @Query('page') page?: string | number,
     @Query('limit') limit?: string | number,
   ) {
-    return this.svc.listOwnerBookings(u.id, {
+    const userId = this.getUserId(u);
+
+    return this.svc.listOwnerBookings(userId, {
       status: this.parseStatus(status),
       from,
       to,
-      page: Number(page),
-      limit: Number(limit),
+      page: Number(page ?? 1),
+      limit: Number(limit ?? 20),
     });
   }
 
   @Get('dashboard/overview')
   @ApiOperation({ summary: 'Resumen para dashboard del RENTER' })
   async overview(@CurrentUser() u: UserPayloadInterface) {
-    return this.svc.overview(u.id);
+    const userId = this.getUserId(u);
+    return this.svc.overview(userId);
   }
 
   @Get('balance')
   @ApiOperation({ summary: 'Saldo del propietario' })
   async balance(@CurrentUser() u: UserPayloadInterface) {
-    return this.svc.balance(u.id);
+    const userId = this.getUserId(u);
+    return this.svc.balance(userId);
   }
 
   @Get('payments')
@@ -60,7 +85,8 @@ export class RenterController {
     @Query('page') page?: string | number,
     @Query('limit') limit?: string | number,
   ) {
-    return this.svc.listPayments(u.id, Number(page ?? 1), Number(limit ?? 20));
+    const userId = this.getUserId(u);
+    return this.svc.listPayments(userId, Number(page ?? 1), Number(limit ?? 20));
   }
 
   @Post('payouts')
@@ -69,7 +95,8 @@ export class RenterController {
     @CurrentUser() u: UserPayloadInterface,
     @Body() body: { amount: number },
   ) {
-    return this.svc.createPayout(u.id, Number(body?.amount ?? 0));
+    const userId = this.getUserId(u);
+    return this.svc.createPayout(userId, Number(body?.amount ?? 0));
   }
 
   @Get('payouts')
@@ -79,6 +106,7 @@ export class RenterController {
     @Query('page') page?: string | number,
     @Query('limit') limit?: string | number,
   ) {
-    return this.svc.listPayouts(u.id, Number(page ?? 1), Number(limit ?? 20));
+    const userId = this.getUserId(u);
+    return this.svc.listPayouts(userId, Number(page ?? 1), Number(limit ?? 20));
   }
 }
