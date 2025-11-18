@@ -50,6 +50,9 @@ export class PinsService {
       ...(query.city && {
         city: { contains: query.city.trim(), mode: 'insensitive' },
       }),
+       ...(query.state && {
+      state: { contains: query.state.trim(), mode: 'insensitive' },
+      }),
     };
 
     // 🔎 Búsqueda general (texto libre)
@@ -100,6 +103,7 @@ export class PinsService {
           seats: true,
           transmission: true,
           averageRating: true,
+          state: true,
           photos: {
             where: { isCover: true },
             select: { url: true },
@@ -123,6 +127,7 @@ export class PinsService {
         transmission: pin.transmission,
         averageRating: pin.averageRating ?? 0,
         thumbnailUrl: pin.photos?.[0]?.url ?? null,
+        state: pin.state,
       })),
       page,
       limit,
