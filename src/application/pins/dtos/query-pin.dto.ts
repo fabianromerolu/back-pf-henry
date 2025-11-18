@@ -20,18 +20,24 @@ export class QueryPinsDto {
   @Min(1)
   page: number = 1;
 
-  @ApiProperty({ example: 12, description: 'Items per page (pagination)' })
+  @ApiProperty({ example: 15, description: 'Items per page (pagination)' })
   @Type(() => Number)
   @IsOptional()
   @IsInt()
   @Min(1)
   @Max(50)
-  limit: number = 12;
+  limit: number = 15;
 
   @ApiPropertyOptional({ description: 'Filter by city' })
   @IsOptional()
   @IsString()
   city?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by state' })
+  @IsOptional()
+  @IsString()
+  state?: string;
+
 
   @ApiPropertyOptional({
     enum: VehicleCategory,
