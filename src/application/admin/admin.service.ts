@@ -22,11 +22,30 @@ export class AdminService {
   /* ========= USERS ========= */
 
   async listUsers(filters: {
-    page?: number; limit?: number; q?: string; role?: AppRole; status?: UserStatus; city?: string;
+    page?: number;
+    limit?: number;
+    q?: string;
+    role?: AppRole;
+    status?: UserStatus;
+    city?: string;
   }) {
-    // Reusa tu UsersService.list para mantener una sola verdad
-    return this.users.list(filters);
+    // Reusa UsersService.list
+    const result = await this.users.list(filters);
+    const { page, limit, total, pages } = result.meta;
+
+    return {
+      data: result.data,
+      meta: {
+        page,
+        limit,
+        total,
+        pages,
+        hasNext: page * limit < total,
+        hasPrev: page > 1,
+      },
+    };
   }
+
 
   async setUserStatus(userId: string, status: UserStatus, blockPins = true) {
     if (!userId) throw new BadRequestException('userId requerido');

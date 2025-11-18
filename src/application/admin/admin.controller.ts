@@ -8,6 +8,8 @@ import {
   Query,
   UseGuards,
   ParseUUIDPipe,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -40,18 +42,27 @@ export class AdminController {
 
   /* ===== USERS ===== */
 
+  /* ===== USERS ===== */
+
   @Get('users')
   @ApiOperation({ summary: 'Listar usuarios (admin)' })
-  async listUsers(@Query() q: QueryAdminUsersDto) {
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 20 })
+  async listUsers(
+    @Query() q: QueryAdminUsersDto,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+  ) {
     return this.admin.listUsers({
       q: q.q,
       role: q.role,
       status: q.status,
       city: q.city,
-      page: q.page,
-      limit: q.limit,
+      page,
+      limit,
     });
   }
+
 
   @Patch('users/:id/status')
   @ApiOperation({ summary: 'Cambiar estado del usuario (ACTIVE | SUSPENDED)' })
