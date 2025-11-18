@@ -1,4 +1,5 @@
 import {
+  BadRequestException, // 👈 importa esto
   Controller,
   Get,
   Patch,
@@ -20,6 +21,19 @@ import { BookingsStatus } from '@prisma/client';
 export class StandardUserController {
   constructor(private readonly svc: StandardUserService) {}
 
+  // helper para no repetir la jugada en cada endpoint
+  private getUserId(u: UserPayloadInterface): string {
+    const id =
+      (u as any).id ??
+      (u as any).userId ??
+      (u as any).sub;
+
+    if (!id) {
+      throw new BadRequestException('userId requerido');
+    }
+    return id;
+  }
+
   // Normaliza status (string) -> enum BookingsStatus
   private parseStatus(s?: string): BookingsStatus | undefined {
     if (!s) return undefined;
@@ -39,7 +53,8 @@ export class StandardUserController {
   @Get('dashboard/overview')
   @ApiOperation({ summary: 'Resumen para dashboard del USER (cliente)' })
   async overview(@CurrentUser() u: UserPayloadInterface) {
-    return this.svc.overview(u.id);
+    const userId = this.getUserId(u);
+    return this.svc.overview(userId);
   }
 
   /* ========== MIS RESERVAS (LISTADO) ========== */
@@ -59,7 +74,8 @@ export class StandardUserController {
     @Query('page') page?: string | number,
     @Query('limit') limit?: string | number,
   ) {
-    return this.svc.listMyBookings(u.id, {
+    const userId = this.getUserId(u);
+    return this.svc.listMyBookings(userId, {
       status: this.parseStatus(status),
       from,
       to,
@@ -77,7 +93,8 @@ export class StandardUserController {
     @CurrentUser() u: UserPayloadInterface,
     @Param('id') id: string,
   ) {
-    return this.svc.getMyBooking(u.id, id);
+    const userId = this.getUserId(u);
+    return this.svc.getMyBooking(userId, id);
   }
 
   /* ========== CANCELAR UNA RESERVA MÍA ========== */
@@ -89,6 +106,7 @@ export class StandardUserController {
     @CurrentUser() u: UserPayloadInterface,
     @Param('id') id: string,
   ) {
-    return this.svc.cancelMyBooking(u.id, id);
+    const userId = this.getUserId(u);
+    return this.svc.cancelMyBooking(userId, id);
   }
 }
