@@ -23,6 +23,7 @@ export interface MercadoPagoWebhookData {
   live_mode?: boolean;
   user_id?: string;
   api_version?: string;
+  resource?: string;
   data?: {
     id?: string | number;
   };
@@ -76,6 +77,7 @@ export class PaymentsService {
         notification_url: `${process.env.MP_BACKEND_URL}/payments/webhook`,
       };
 
+      console.log('DEBUG PAYMENT BODY:', body);
       const result = (await this.preference.create({
         body,
       })) as PreferenceCreateResponse;
@@ -87,48 +89,126 @@ export class PaymentsService {
       throw new Error('Error al crear la preferencia de pago');
     }
   }
-
   async handleWebhook(data: MercadoPagoWebhookData) {
-    try {
-      this.logger.log(`Webhook recibido: ${JSON.stringify(data)}`);
-      const topic = data.topic || data.type;
-      if (topic !== 'payment') return { received: true };
+  try {
+    this.logger.log(`Webhook recibido: ${JSON.stringify(data)}`);
 
-      const paymentId = data.data?.id ?? data.id;
-      if (!paymentId) return { received: false };
+    const topic = data.topic || data.type;
 
-      const result = await this.payment.get({ id: paymentId });
-      const bookingId = result.external_reference;
-      if (!bookingId) return { received: true };
+    let paymentId: number | string | undefined;
 
-      const status = (result.status ?? 'UNKNOWN').toUpperCase();
+    // ======================================================
+    //    CASO 1: topic = "payment" (checkout tradicional)
+    // ======================================================
+    if (topic === 'payment') {
+      paymentId = data.data?.id ?? data.id;
+    }
 
-      let paymentStatus: string;
-      switch (status) {
-        case 'APPROVED':
-          paymentStatus = 'PAID';
-          break;
-        case 'PENDING':
-          paymentStatus = 'PENDING';
-          break;
-        case 'REJECTED':
-          paymentStatus = 'FAILED';
-          break;
-        default:
-          paymentStatus = 'UNPAID';
+    // ======================================================
+    //    CASO 2: topic = "merchant_order" (Checkout Pro)
+    // ======================================================
+    if (topic === 'merchant_order') {
+      // Obtener merchant order desde la URL enviada
+      if (!data.resource) {
+        this.logger.warn('Merchant order sin resource');
+        return { received: true };
       }
 
-      const booking = await this.prisma.bookings.update({
-        where: { id: bookingId },
-        data: { paymentStatus, paymentId: String(result.id) },
-        include: { pin: true },
+      const merchantOrder = await fetch(data.resource).then(res => res.json());
+
+      this.logger.log(`Merchant Order: ${JSON.stringify(merchantOrder)}`);
+
+      // Tomar el primer payment asociado
+      paymentId = merchantOrder.payments?.[0]?.id;
+
+      if (!paymentId) {
+        this.logger.warn('Merchant order sin payment asociado');
+        return { received: true };
+      }
+    }
+
+    // ======================================================
+    //    Si no hay paymentId → no procesar
+    // ======================================================
+    if (!paymentId) {
+      this.logger.warn('Webhook sin paymentId');
+      return { received: true };
+    }
+
+    // ======================================================
+    //    OBTENER PAGO DESDE MERCADO PAGO
+    // ======================================================
+    let result;
+    try {
+      result = await this.payment.get({ id: paymentId });
+    } catch (err) {
+      // MP a veces aún no tiene el pago listo → reintento
+      await new Promise(res => setTimeout(res, 1200));
+      result = await this.payment.get({ id: paymentId });
+    }
+
+    this.logger.log(`Pago consultado: ${JSON.stringify(result)}`);
+
+    const bookingId = result.external_reference;
+    if (!bookingId) {
+      this.logger.warn('Pago sin external_reference, ignorado');
+      return { received: true };
+    }
+
+    // ======================================================
+    //    MAPEAR ESTADO DEL PAGO
+    // ======================================================
+    const status = (result.status ?? 'UNKNOWN').toUpperCase();
+
+    let paymentStatus: string;
+    switch (status) {
+      case 'APPROVED':
+      case 'AUTHORIZED':
+        paymentStatus = 'PAID';
+        break;
+
+      case 'PENDING':
+      case 'IN_PROCESS':
+        paymentStatus = 'PENDING';
+        break;
+
+      case 'REJECTED':
+      case 'CANCELLED':
+      case 'REFUNDED':
+      case 'CHARGED_BACK':
+        paymentStatus = 'FAILED';
+        break;
+
+      default:
+        paymentStatus = 'UNPAID';
+    }
+
+    // ======================================================
+    //    ACTUALIZAR BOOKING
+    // ======================================================
+    const booking = await this.prisma.bookings.update({
+      where: { id: bookingId },
+      data: { 
+        paymentStatus, 
+        paymentId: String(result.id) 
+      },
+      include: { pin: true },
+    });
+
+    // ======================================================
+    //    EVITAR DUPLICAR WALLET (idempotencia)
+    // ======================================================
+    if (paymentStatus === 'PAID') {
+      const existing = await this.prisma.walletTransaction.findFirst({
+        where: { bookingId: booking.id, type: 'CREDIT' },
       });
 
-      // 👇 Credita wallet si se aprobó
-      if (paymentStatus === 'PAID') {
+      if (!existing) {
         const holdDays = Number(process.env.WALLET_HOLD_DAYS ?? '3');
-        const availableAt = new Date();
-        availableAt.setDate(availableAt.getDate() + holdDays);
+        const availableAt =
+          holdDays > 0 
+            ? new Date(Date.now() + holdDays * 86400000)
+            : null;
 
         await this.prisma.walletTransaction.create({
           data: {
@@ -136,17 +216,20 @@ export class PaymentsService {
             bookingId: booking.id,
             type: 'CREDIT',
             amount: booking.ownerEarning,
-            currency: booking.currency || 'COP',
+            currency: 'MXN', // O booking.currency, pero fijo si es México
             status: holdDays > 0 ? 'PENDING' : 'AVAILABLE',
-            availableAt: holdDays > 0 ? availableAt : null,
+            availableAt,
           },
         });
       }
-
-      return { received: true };
-    } catch (error: any) {
-      this.logger.error(`Error al procesar webhook: ${error?.message}`);
-      return { received: false, error: error?.message };
     }
+
+    return { received: true };
+
+  } catch (error: any) {
+    this.logger.error(`Error al procesar webhook: ${error?.message}`);
+    return { received: false, error: error?.message };
   }
+}
+
 }
