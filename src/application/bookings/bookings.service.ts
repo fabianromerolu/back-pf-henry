@@ -118,6 +118,7 @@ export class BookingsService {
       data: {
         userId: createBooking.userId,
         pinId: vehicle.id,
+        status: 'pending',
         startDate: createBooking.start_date,
         endDate: createBooking.end_date,
         totalPrice: gross,
@@ -127,10 +128,10 @@ export class BookingsService {
       },
     });
 
-    await this.prisma.pin.update({
-      where: { id: vehicle.id },
-      data: { bookingsCount: { increment: 1 }, updatedAt: new Date() },
-    });
+    //await this.prisma.pin.update({
+    //  where: { id: vehicle.id },
+    //  data: { bookingsCount: { increment: 1 }, updatedAt: new Date() },
+    //});
 
     return newOrder;
   }
@@ -247,7 +248,7 @@ export class BookingsService {
       //validador de superposicion de fechas en ordenes activas
       where: {
         pinId,
-        status: { in: ['active'] },
+        status: { in: ['active', 'pending'] },
         startDate: { lte: endDate },
         endDate: { gte: startDate },
       },
