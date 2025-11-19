@@ -115,12 +115,12 @@ export class BookingsService {
 
     // 🚀 NUEVO: aplicar cupón de bienvenida si corresponde 
 
-   gross = await this.couponsService.applyCoupon( 
-    createBooking.userId,
-    vehicle.id, // se usa como referencia, luego se marca bookingId 
-    gross, 
+   //gross = await this.couponsService.applyCoupon( 
+    //createBooking.userId,
+    //vehicle.id, // se usa como referencia, luego se marca bookingId 
+    //gross, 
 
-  );
+  //);
 
     //calculos grales de impuestos comisiones etc
     const FEE = Number(process.env.PLATFORM_FEE_PCT ?? '0.15');

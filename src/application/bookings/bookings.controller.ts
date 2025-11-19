@@ -4,21 +4,23 @@ import {
   Post,
   Body,
   Param,
-  UseGuards,
   Query,
   HttpCode,
   Patch,
+  UseGuards,
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { bookingDto, BookingsResponseDto } from './dto/booking.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+//import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserPayloadInterface } from './interfaces/bookingsInterface';
 import { BookingsQueryDto } from './dto/booking-query.dto';
 import { AppRole } from '@prisma/client';
 import { Roles } from '../auth/types/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @Controller('bookings') //se colocan los guardianes solo en algunos endpoints, una vez probados los mismos se procedera a los resguardos
 @UseGuards(JwtAuthGuard)
@@ -28,7 +30,7 @@ export class BookingsController {
 
   @Post()
   @HttpCode(201)
-  @Roles(AppRole.ADMIN, AppRole.USER)
+  @RolesGuard(AppRole.USER)
   @ApiOperation({ summary: 'Create new Order' })
   @ApiResponse({
     status: 201,
