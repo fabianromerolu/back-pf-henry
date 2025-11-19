@@ -15,6 +15,7 @@ import { AdminModule } from './application/admin/admin.module';
 import { ReviewsModule } from './application/reviews/reviews.module';
 import { StandardUserModule } from './application/standard-user/standard-user.module';
 import { RenterModule } from './application/renter/renter.module';
+import { CouponsModule } from './application/coupons/coupons.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env'] }),
@@ -30,6 +31,7 @@ import { RenterModule } from './application/renter/renter.module';
     ReviewsModule,
     StandardUserModule,
     RenterModule,
+    CouponsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

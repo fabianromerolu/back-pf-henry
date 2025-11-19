@@ -1,60 +1,38 @@
-import { Injectable, BadRequestException } from '@nestjs/common'; 
-import { PrismaService } from 'src/infra/prisma/prisma.service'; 
+// src/application/coupons/coupons.service.ts
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { PrismaService } from 'src/infra/prisma/prisma.service';
 
- 
+@Injectable()
+export class CouponsService {
+  constructor(private readonly prisma: PrismaService) {}
 
-@Injectable() 
+  async createWelcomeCoupon(userId: string) {
+    // Verificar que el usuario exista
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new BadRequestException(`User with id ${userId} not found`);
+    }
 
-export class CouponsService { 
-constructor(private readonly prisma: PrismaService) {} 
-
- 
-
-  async createWelcomeCoupon(userId: string) { 
-
-    // Verificar que el usuario exista 
-
-    const user = await this.prisma.user.findUnique({ where: { id: userId } }); 
-
-    if (!user) { 
-    throw new BadRequestException(`User with id ${userId} not found`); 
-
-    } 
-
- 
-
- 
     // Si ya tiene cupón, devolverlo
     const existing = await this.prisma.coupon.findFirst({ // 🐶 cambiado: findFirst en vez de findUnique
       where: { userId },
       include: { user: true }, // incluir datos del usuario
     });
- 
 
-    if (existing) return existing; 
+    if (existing) return existing;
 
- 
-
-    // Crear cupón nuevo 
-
-    return this.prisma.coupon.create({ 
-
-      data: { 
-        userId, 
-        code: `WELCOME-${userId.slice(0, 6)}`, 
-        discountPct: 20, 
-        description: 'Cupón de bienvenida para tu primera reserva', 
-        expiresAt: new Date(new Date().setMonth(new Date().getMonth() + 1)), 
-
-      }, 
-
-      include: { user: true }, // 👈 incluir datos del usuario 
-
-    }); 
-
-  } 
-
- 
+    // Crear cupón nuevo
+    return this.prisma.coupon.create({
+      data: {
+        userId,
+        code: `WELCOME-${userId.slice(0, 6)}`,
+        discountPct: 20,
+        description: 'Cupón de bienvenida para tu primera reserva',
+        expiresAt: new Date(new Date().setMonth(new Date().getMonth() + 1)),
+      },
+      include: { user: true }, // incluir datos del usuario
+    });
+  }
 
   // 🐶 NUEVO: calcula el monto descontado sin tocar la DB (solo lectura)
   async calculateCouponDiscount(userId: string, gross: number): Promise<{ discountedGross: number; couponId: string | null }> {
