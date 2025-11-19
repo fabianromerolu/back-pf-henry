@@ -42,13 +42,13 @@ export function validateDates(startDate: Date, endDate: Date) {
     throw new BadRequestException('Periodo incorrecto');
   }
 
-  const minRentalHours = 1;
+  const minRentalHours = 24;
   const diffMs = endDate.getTime() - startDate.getTime();
   const diffHours = diffMs / (1000 * 60 * 60);
 
   if (diffHours < minRentalHours) {
     throw new BadRequestException(
-      `El período mínimo de alquiler es ${minRentalHours} hora`,
+      `El período mínimo de alquiler es ${minRentalHours} horas`,
     );
   }
 }

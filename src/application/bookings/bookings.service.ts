@@ -18,8 +18,7 @@ import { BookingsQueryDto } from './dto/booking-query.dto';
 
 @Injectable()
 export class BookingsService {
-  constructor(private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async completeBooking(bookingId: string, user: UserPayloadInterface) {
     const booking = await this.prisma.bookings.findUnique({
@@ -88,15 +87,11 @@ export class BookingsService {
     }
 
     //verificacion de fechas y validacion de disponibilidad
-    const availability: boolean = await this.checkAvailability(
+    await this.checkAvailability(
       createBooking.pinId,
       createBooking.start_date,
       createBooking.end_date,
     );
-
-    if (!availability) {
-      throw new BadRequestException('Periodo no valido');
-    }
 
     const prices = {
       pricePerDay: vehicle.pricePerDay,
@@ -123,6 +118,7 @@ export class BookingsService {
       data: {
         userId: createBooking.userId,
         pinId: vehicle.id,
+        status: 'pending',
         startDate: createBooking.start_date,
         endDate: createBooking.end_date,
         totalPrice: gross,
@@ -132,10 +128,10 @@ export class BookingsService {
       },
     });
 
-    await this.prisma.pin.update({
-      where: { id: vehicle.id },
-      data: { bookingsCount: { increment: 1 }, updatedAt: new Date() },
-    });
+    //await this.prisma.pin.update({
+    //  where: { id: vehicle.id },
+    //  data: { bookingsCount: { increment: 1 }, updatedAt: new Date() },
+    //});
 
     return newOrder;
   }
@@ -245,37 +241,26 @@ export class BookingsService {
     pinId: string,
     startDate: Date,
     endDate: Date,
-  ): Promise<boolean> {
+  ): Promise<void> {
     validateDates(startDate, endDate); //validador de fechas
 
     const overlappingBooking = await this.prisma.bookings.findFirst({
       //validador de superposicion de fechas en ordenes activas
       where: {
-        pinId: pinId,
-        status: 'active',
-        OR: [
-          {
-            startDate: { lte: startDate },
-            endDate: { gte: startDate },
-          },
-
-          {
-            startDate: { lte: endDate },
-            endDate: { gte: endDate },
-          },
-
-          {
-            startDate: { gte: startDate },
-            endDate: { lte: endDate },
-          },
-        ],
+        pinId,
+        status: { in: ['active', 'pending'] },
+        startDate: { lte: endDate },
+        endDate: { gte: startDate },
       },
     });
 
     if (overlappingBooking) {
-      return false;
-    }
+      const s = overlappingBooking.startDate.toISOString().split('T')[0];
+      const e = overlappingBooking.endDate.toISOString().split('T')[0];
 
-    return true;
+      throw new BadRequestException(
+        `La fecha seleccionada se superpone con una reserva existente (${s} al ${e}).`,
+      );
+    }
   }
 }
