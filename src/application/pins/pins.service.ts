@@ -186,7 +186,7 @@ export class PinsService {
       status: pin.status,
       averageRating: Number(pin.averageRating ?? 0),
       photos: pin.photos.map((p) => ({ url: p.url })),
-      coverImage,
+      thumbnailUrl: coverImage,
     };
   }
 

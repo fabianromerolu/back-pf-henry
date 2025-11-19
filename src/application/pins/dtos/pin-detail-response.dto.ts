@@ -59,10 +59,6 @@ export class PinDetailResponseDto {
   @ApiProperty({ type: [String] })
   photos: { url: string }[];
 
-  @ApiProperty({
-    nullable: true,
-    description: 'URL de la foto principal (isCover)',
-    example: 'https://res.cloudinary.com/.../cover.jpg',
-  })
-  coverImage: string | null;
+  @ApiProperty({ nullable: true })
+  thumbnailUrl: string | null;
 }

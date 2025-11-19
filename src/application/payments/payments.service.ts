@@ -68,9 +68,9 @@ export class PaymentsService {
           },
         ],
         back_urls: {
-          success: `${process.env.MP_BACKEND_URL}/payments/success`,
-          pending: `${process.env.MP_BACKEND_URL}/payments/pending`,
-          failure: `${process.env.MP_BACKEND_URL}/payments/failure`,
+          success: `https://front-pf-henry.vercel.app/payments/success`,
+          failure: `https://front-pf-henry.vercel.app/payments/failure`,
+          pending: `https://front-pf-henry.vercel.app/payments/pending`,
         },
         auto_return: 'approved',
         external_reference: bookingId,
