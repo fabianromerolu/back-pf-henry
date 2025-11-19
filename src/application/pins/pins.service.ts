@@ -166,6 +166,7 @@ export class PinsService {
     if (!pin) throw new NotFoundException('Pin not found');
     if (pin.status !== VehicleStatus.PUBLISHED)
       throw new NotFoundException('Pin not published');
+    const coverImage = pin.photos.length ? pin.photos[0].url : null;
 
     return {
       id: pin.id,
@@ -185,6 +186,7 @@ export class PinsService {
       status: pin.status,
       averageRating: Number(pin.averageRating ?? 0),
       photos: pin.photos.map((p) => ({ url: p.url })),
+      coverImage,
     };
   }
 
