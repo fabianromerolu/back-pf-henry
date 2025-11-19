@@ -37,7 +37,7 @@ export class CronService {
     for (const booking of pendingBookings) {
       await this.mailerService.sendPendingReminder(
         booking.user.email,
-        booking.user.name,
+        booking.user.name ?? 'usuario',
       );
     }
 
@@ -60,7 +60,7 @@ export class CronService {
       // enviar notificación de cancelación
       await this.mailerService.sendBookingCancelled(
         booking.user.email,
-        booking.user.name,
+        booking.user.name ?? 'usuario',
       );
 
       // cambiar estado → suspended
