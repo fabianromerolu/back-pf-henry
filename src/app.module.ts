@@ -14,6 +14,7 @@ import { PaymentsModule } from './application/payments/payments.module';
 import { AdminModule } from './application/admin/admin.module';
 import { ReviewsModule } from './application/reviews/reviews.module';
 import { StandardUserModule } from './application/standard-user/standard-user.module';
+import { CronModule } from './application/cron/cron.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env'] }),
@@ -28,6 +29,7 @@ import { StandardUserModule } from './application/standard-user/standard-user.mo
     AdminModule,
     ReviewsModule,
     StandardUserModule,
+    CronModule,
   ],
   controllers: [AppController],
   providers: [AppService],

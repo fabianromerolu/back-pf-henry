@@ -108,7 +108,7 @@ export class BookingsService {
 
     //calculos grales de impuestos comisiones etc
     const FEE = Number(process.env.PLATFORM_FEE_PCT ?? '0.15');
-    const currency = process.env.DEFAULT_CURRENCY || 'COP';
+    const currency = process.env.DEFAULT_CURRENCY || 'MXN';
 
     const platformFee = Number(gross) * FEE;
     const ownerEarning = Number(gross) - platformFee;
