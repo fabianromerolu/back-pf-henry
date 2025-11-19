@@ -13,20 +13,20 @@ export class CronService {
     private readonly mailerService: MailerService,
   ) {}
 
-  // se ejecuta cada 5 min
-  @Cron('*/5 * * * *')
+  @Cron('*/1 * * * *') // se ejecuta cada 1 min
   async handlePendingBookings() {
     this.logger.log('Ejecutando cron para reservas pending...');
 
     const now = new Date();
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    //const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000); //periodo de 24hs
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000); //periodo de 5 min
 
     // busca reservas pendientes
     const pendingBookings = await this.prisma.bookings.findMany({
       where: {
         status: 'pending',
         createdAt: {
-          gt: twentyFourHoursAgo,
+          gt: fiveMinutesAgo, //evalua a las que solo esten dentro del margen de tiempo
         },
       },
       include: {
@@ -35,21 +35,18 @@ export class CronService {
     });
 
     for (const booking of pendingBookings) {
+      //manda los email
       await this.mailerService.sendPendingReminder(
         booking.user.email,
         booking.user.name ?? 'usuario',
       );
     }
 
-    // ---------------------------
-    // 2. Buscar reservas PENDING vencidas (más de 24 horas)
-    // ---------------------------
+    //  Busca reservas vencidas pasando 5min
     const expiredBookings = await this.prisma.bookings.findMany({
       where: {
         status: 'pending',
-        createdAt: {
-          lte: twentyFourHoursAgo,
-        },
+        createdAt: { lte: fiveMinutesAgo },
       },
       include: {
         user: true,
@@ -57,13 +54,13 @@ export class CronService {
     });
 
     for (const booking of expiredBookings) {
-      // enviar notificación de cancelación
+      // manda email de cancelacion
       await this.mailerService.sendBookingCancelled(
         booking.user.email,
         booking.user.name ?? 'usuario',
       );
 
-      // cambiar estado → suspended
+      // cambiar estado
       await this.prisma.bookings.update({
         where: { id: booking.id },
         data: { status: 'suspended' },
