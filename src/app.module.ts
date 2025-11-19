@@ -15,6 +15,7 @@ import { AdminModule } from './application/admin/admin.module';
 import { ReviewsModule } from './application/reviews/reviews.module';
 import { StandardUserModule } from './application/standard-user/standard-user.module';
 import { CronModule } from './application/cron/cron.module';
+import { RenterModule } from './application/renter/renter.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env'] }),
@@ -30,6 +31,7 @@ import { CronModule } from './application/cron/cron.module';
     ReviewsModule,
     StandardUserModule,
     CronModule,
+    RenterModule,
   ],
   controllers: [AppController],
   providers: [AppService],
