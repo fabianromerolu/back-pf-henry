@@ -18,8 +18,7 @@ import { BookingsQueryDto } from './dto/booking-query.dto';
 
 @Injectable()
 export class BookingsService {
-  constructor(private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async completeBooking(bookingId: string, user: UserPayloadInterface) {
     const booking = await this.prisma.bookings.findUnique({
@@ -88,13 +87,11 @@ export class BookingsService {
     }
 
     //verificacion de fechas y validacion de disponibilidad
-   await this.checkAvailability(
+    await this.checkAvailability(
       createBooking.pinId,
       createBooking.start_date,
       createBooking.end_date,
     );
-
-    
 
     const prices = {
       pricePerDay: vehicle.pricePerDay,
@@ -249,20 +246,20 @@ export class BookingsService {
     const overlappingBooking = await this.prisma.bookings.findFirst({
       //validador de superposicion de fechas en ordenes activas
       where: {
-      pinId,
-      status: 'active',
-      startDate: { lte: endDate },
-      endDate: { gte: startDate },
+        pinId,
+        status: { in: ['active'] },
+        startDate: { lte: endDate },
+        endDate: { gte: startDate },
       },
     });
 
     if (overlappingBooking) {
-    const s = overlappingBooking.startDate.toISOString().split('T')[0];
-    const e = overlappingBooking.endDate.toISOString().split('T')[0];
+      const s = overlappingBooking.startDate.toISOString().split('T')[0];
+      const e = overlappingBooking.endDate.toISOString().split('T')[0];
 
-    throw new BadRequestException(
-      `La fecha seleccionada se superpone con una reserva existente (${s} al ${e}).`,
-    );
-  }
+      throw new BadRequestException(
+        `La fecha seleccionada se superpone con una reserva existente (${s} al ${e}).`,
+      );
+    }
   }
 }

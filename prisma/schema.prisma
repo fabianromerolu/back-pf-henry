@@ -16,6 +16,7 @@ enum UserStatus {
 
 enum BookingsStatus {
   active
+  pending
   suspended
   complete
 }
