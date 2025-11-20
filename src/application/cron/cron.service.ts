@@ -18,15 +18,15 @@ export class CronService {
     this.logger.log('Ejecutando cron para reservas pending...');
 
     const now = new Date();
-    //const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000); //periodo de 24hs
-    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000); //periodo de 5 min
+    //const tiempoMax = new Date(now.getTime() - 24 * 60 * 60 * 1000); //periodo de 24hs
+    const tiempoMax = new Date(now.getTime() - 5 * 60 * 1000); //periodo de 5 min
 
     // busca reservas pendientes
     const pendingBookings = await this.prisma.bookings.findMany({
       where: {
         status: 'pending',
         createdAt: {
-          gt: fiveMinutesAgo, //evalua a las que solo esten dentro del margen de tiempo
+          gt: tiempoMax, //evalua a las que solo esten dentro del margen de tiempo
         },
       },
       include: {
@@ -46,7 +46,7 @@ export class CronService {
     const expiredBookings = await this.prisma.bookings.findMany({
       where: {
         status: 'pending',
-        createdAt: { lte: fiveMinutesAgo },
+        createdAt: { lte: tiempoMax },
       },
       include: {
         user: true,
