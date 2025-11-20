@@ -1,16 +1,18 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { BookingsService } from './bookings.service';
+
+import { UsersModule } from '../users/users.module';
+import { AuthModule } from '../auth/auth.module';
+
 import { BookingsController } from './bookings.controller';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { BookingsService } from './bookings.service';
 
 @Module({
   imports: [
-    JwtModule.register({
-      secret: process.env.JWT_SECRET,
-    }),
+    UsersModule,
+    AuthModule, // 👈 Ya trae JwtModule y Passport configurados
   ],
   controllers: [BookingsController],
-  providers: [BookingsService, JwtAuthGuard],
+  providers: [BookingsService],
+  exports: [BookingsService],
 })
 export class BookingsModule {}

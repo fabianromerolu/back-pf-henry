@@ -17,12 +17,19 @@ import { bookingDto, BookingsResponseDto } from './dto/booking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserPayloadInterface } from './interfaces/bookingsInterface';
 import { BookingsQueryDto } from './dto/booking-query.dto';
+import { RolesGuard } from '../auth/guards/roles.guard';
+//import { AnyJwtGuard } from '../auth/guards/any-jwt.guard';
+import { Roles } from '../auth/types/roles.decorator';
+import { AppRole } from '@prisma/client';
 
 @Controller('bookings') //se colocan los guardianes solo en algunos endpoints, una vez probados los mismos se procedera a los resguardos
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
   @Post()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(AppRole.USER)
   @HttpCode(201)
   @ApiOperation({ summary: 'Create new Order' })
   @ApiResponse({
