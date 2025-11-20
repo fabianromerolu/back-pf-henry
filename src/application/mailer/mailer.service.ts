@@ -114,8 +114,7 @@ export class MailerService {
           cid: 'volantia-logo',
         });
       }
-
-      const mailOptions = {
+   const mailOptions = {
         from: `${process.env.MAILER_NAME || 'Volantia'} <${this.from}>`,
         to,
         subject,
@@ -128,6 +127,7 @@ export class MailerService {
           .slice(0, 1000),
         attachments,
       };
+
 
       // nodemailer genera el MIME en lugar de enviarlo (info.message puede ser Buffer|string|Readable)
       const info: any = await transporter.sendMail(mailOptions);

@@ -15,10 +15,14 @@ import { Bookings, BookingsStatus, VehicleStatus } from '@prisma/client';
 import { bookingDto, BookingsResponseDto } from './dto/booking.dto';
 import { UserPayloadInterface } from './interfaces/bookingsInterface';
 import { BookingsQueryDto } from './dto/booking-query.dto';
+import { CouponsService } from '../coupons/coupons.service';
 
 @Injectable()
 export class BookingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly couponsService: CouponsService, // 👈 nuevo
+  ) {}
 
   async completeBooking(bookingId: string, user: UserPayloadInterface) {
     const booking = await this.prisma.bookings.findUnique({
@@ -87,11 +91,15 @@ export class BookingsService {
     }
 
     //verificacion de fechas y validacion de disponibilidad
-    await this.checkAvailability(
+    const availability: boolean = await this.checkAvailability(
       createBooking.pinId,
       createBooking.start_date,
       createBooking.end_date,
     );
+
+    if (!availability) {
+      throw new BadRequestException('Periodo no valido');
+    }
 
     const prices = {
       pricePerDay: vehicle.pricePerDay,
@@ -106,6 +114,62 @@ export class BookingsService {
       createBooking.end_date,
     );
 
+    // === 🐘 NUEVA LÓGICA: buscar y aplicar cupón ENTERAMENTE EN EL BACK ===
+    // - Si el front envía couponCode lo usamos.
+    // - Si no, buscamos un cupón disponible para el user (bookingId null, no expirado).
+    // - Calculamos el precio descontado en memoria antes de crear la booking.
+    // - Después de crear la booking intentamos marcar el cupón como usado con protección contra race.
+    // (todo lo marcado aquí con 🐘 es nuevo)
+    let couponId: string | null = null;
+    try {
+      const maybeCouponCode = (createBooking as any)?.couponCode ?? null; // 🐘 acepta couponCode opcional
+      let coupon: any = null;
+
+      if (maybeCouponCode) {
+        // buscar por código + user (si front envía código) 🐘
+        coupon = await this.prisma.coupon.findFirst({
+          where: {
+            code: maybeCouponCode,
+            userId: createBooking.userId,
+            bookingId: null,
+          },
+        });
+      } else {
+        // buscar primer cupón válido del user (no usado y no expirado) 🐘
+        coupon = await this.prisma.coupon.findFirst({
+          where: {
+            userId: createBooking.userId,
+            bookingId: null,
+            OR: [
+              { expiresAt: null },
+              { expiresAt: { gt: new Date() } },
+            ],
+          },
+          orderBy: { createdAt: 'asc' },
+        });
+      }
+
+      if (coupon) {
+        // validar estado del cupón 🐘
+        if (coupon.bookingId) {
+          coupon = null; // ya usado, ignorar
+        } else if (coupon.expiresAt && coupon.expiresAt < new Date()) {
+          coupon = null; // expirado
+        } else if (typeof coupon.discountPct !== 'number') {
+          coupon = null; // inválido
+        } else {
+          couponId = coupon.id;
+          const discount = (gross * coupon.discountPct) / 100;
+          gross = Number((gross - discount).toFixed(2)); // aplicar descuento en memoria 🐘
+        }
+      }
+    } catch (err) {
+      // si falla la búsqueda del cupón no bloqueamos la reserva; solo logueamos 🐘
+      console.error('Error buscando/aplicando cupón en back:', err);
+      couponId = null;
+    }
+    // === FIN LÓGICA NUEVA 🐘 ===
+
     //calculos grales de impuestos comisiones etc
     const FEE = Number(process.env.PLATFORM_FEE_PCT ?? '0.15');
     const currency = process.env.DEFAULT_CURRENCY || 'MXN';
@@ -118,7 +182,6 @@ export class BookingsService {
       data: {
         userId: createBooking.userId,
         pinId: vehicle.id,
-        status: 'pending',
         startDate: createBooking.start_date,
         endDate: createBooking.end_date,
         totalPrice: gross,
@@ -128,10 +191,31 @@ export class BookingsService {
       },
     });
 
-    //await this.prisma.pin.update({
-    //  where: { id: vehicle.id },
-    //  data: { bookingsCount: { increment: 1 }, updatedAt: new Date() },
-    //});
+    // === 🐘 NUEVO: marcar cupón como usado de forma segura (evita race FKs)
+    if (couponId) {
+      try {
+        // intentamos actualizar solo si bookingId sigue siendo null
+        const res = await this.prisma.coupon.updateMany({
+          where: { id: couponId, bookingId: null },
+          data: { bookingId: newOrder.id, usedAt: new Date() },
+        });
+        if (res.count === 0) {
+          // no se actualizó: posible race o ya usado por otro proceso
+          console.warn(
+            `Coupon ${couponId} no pudo marcarse como usado (count=0) — posible condición de carrera`,
+          );
+        }
+      } catch (err) {
+        // si falla no queremos revertir la booking creada; logueamos 🐘
+        console.error('Error marcando cupón como usado (seguro):', err);
+      }
+    }
+    // === FIN marcar cupón 🐘 ===
+
+    await this.prisma.pin.update({
+      where: { id: vehicle.id },
+      data: { bookingsCount: { increment: 1 }, updatedAt: new Date() },
+    });
 
     return newOrder;
   }
@@ -241,26 +325,37 @@ export class BookingsService {
     pinId: string,
     startDate: Date,
     endDate: Date,
-  ): Promise<void> {
+  ): Promise<boolean> {
     validateDates(startDate, endDate); //validador de fechas
 
     const overlappingBooking = await this.prisma.bookings.findFirst({
       //validador de superposicion de fechas en ordenes activas
       where: {
-        pinId,
-        status: { in: ['active', 'pending'] },
-        startDate: { lte: endDate },
-        endDate: { gte: startDate },
+        pinId: pinId,
+        status: 'active',
+        OR: [
+          {
+            startDate: { lte: startDate },
+            endDate: { gte: startDate },
+          },
+
+          {
+            startDate: { lte: endDate },
+            endDate: { gte: endDate },
+          },
+
+          {
+            startDate: { gte: startDate },
+            endDate: { lte: endDate },
+          },
+        ],
       },
     });
 
     if (overlappingBooking) {
-      const s = overlappingBooking.startDate.toISOString().split('T')[0];
-      const e = overlappingBooking.endDate.toISOString().split('T')[0];
-
-      throw new BadRequestException(
-        `La fecha seleccionada se superpone con una reserva existente (${s} al ${e}).`,
-      );
+      return false;
     }
+
+    return true;
   }
 }
