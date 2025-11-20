@@ -14,6 +14,7 @@ import { PaymentsModule } from './application/payments/payments.module';
 import { AdminModule } from './application/admin/admin.module';
 import { ReviewsModule } from './application/reviews/reviews.module';
 import { StandardUserModule } from './application/standard-user/standard-user.module';
+import { CronModule } from './application/cron/cron.module';
 import { RenterModule } from './application/renter/renter.module';
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { RenterModule } from './application/renter/renter.module';
     AdminModule,
     ReviewsModule,
     StandardUserModule,
+    CronModule,
     RenterModule,
   ],
   controllers: [AppController],

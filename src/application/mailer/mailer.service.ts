@@ -32,7 +32,10 @@ export class MailerService {
   }
 
   private compileTemplate(templateName: string, context: any): string {
-    const filePath = path.join(this.resolveBasePath('templates'), `${templateName}.hbs`);
+    const filePath = path.join(
+      this.resolveBasePath('templates'),
+      `${templateName}.hbs`,
+    );
     const source = fs.readFileSync(filePath, 'utf8');
     const template = hbs.compile(source);
     return template(context);
@@ -51,7 +54,9 @@ export class MailerService {
 
   /** convierte Buffer o string base64 estándar a base64url para Gmail API */
   private toBase64Url(input: Buffer | string) {
-    const b64 = Buffer.isBuffer(input) ? input.toString('base64') : Buffer.from(input).toString('base64');
+    const b64 = Buffer.isBuffer(input)
+      ? input.toString('base64')
+      : Buffer.from(input).toString('base64');
     return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
 
@@ -71,7 +76,12 @@ export class MailerService {
    * Genera el MIME raw usando nodemailer en modo streamTransport (no conecta SMTP)
    * y luego lo envía con Gmail API (users.messages.send).
    */
-  private async sendTemplateMail(to: string, subject: string, templateName: string, context: any) {
+  private async sendTemplateMail(
+    to: string,
+    subject: string,
+    templateName: string,
+    context: any,
+  ) {
     try {
       // Compila HTML
       let html = this.compileTemplate(templateName, context);
@@ -80,7 +90,10 @@ export class MailerService {
       const logoB64 = this.getAssetBase64('volantia.png');
       if (logoB64) {
         const dataUrl = `data:image/png;base64,${logoB64}`;
-        html = html.replace(/src=(["'])cid:volantia-logo\1/gi, `src="${dataUrl}"`);
+        html = html.replace(
+          /src=(["'])cid:volantia-logo\1/gi,
+          `src="${dataUrl}"`,
+        );
         html = html.replace(/cid:volantia-logo/gi, dataUrl);
         context.volantiaLogo = dataUrl;
       }
@@ -108,7 +121,11 @@ export class MailerService {
         subject,
         html,
         // text (opcional): genera una versión simple
-        text: html.replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<\/?[^>]+(>|$)/g, '').trim().slice(0, 1000),
+        text: html
+          .replace(/<style[\s\S]*?<\/style>/gi, '')
+          .replace(/<\/?[^>]+(>|$)/g, '')
+          .trim()
+          .slice(0, 1000),
         attachments,
       };
 
@@ -117,20 +134,33 @@ export class MailerService {
 
       // Obtener Buffer seguro desde info.message (puede ser Buffer|string|Readable)
       let rawMessageBuffer: Buffer;
-      const maybeMessage = info?.message ?? info?.message?.message ?? info?.raw ?? null;
+      const maybeMessage =
+        info?.message ?? info?.message?.message ?? info?.raw ?? null;
 
       if (Buffer.isBuffer(maybeMessage)) {
         rawMessageBuffer = maybeMessage;
       } else if (typeof maybeMessage === 'string') {
         rawMessageBuffer = Buffer.from(maybeMessage, 'utf-8');
-      } else if (maybeMessage && typeof (maybeMessage as any).pipe === 'function') {
+      } else if (
+        maybeMessage &&
+        typeof (maybeMessage as any).pipe === 'function'
+      ) {
         // es un stream
-        rawMessageBuffer = await this.streamToBuffer(maybeMessage as unknown as NodeJS.ReadableStream);
-      } else if (info && info.message && typeof info.message === 'object' && typeof (info.message as any).toString === 'function') {
+        rawMessageBuffer = await this.streamToBuffer(
+          maybeMessage as unknown as NodeJS.ReadableStream,
+        );
+      } else if (
+        info &&
+        info.message &&
+        typeof info.message === 'object' &&
+        typeof (info.message as any).toString === 'function'
+      ) {
         // fallback: try convert to string then buffer
         rawMessageBuffer = Buffer.from(String(info.message));
       } else {
-        throw new Error('No se pudo obtener el MIME raw del mensaje generado por nodemailer');
+        throw new Error(
+          'No se pudo obtener el MIME raw del mensaje generado por nodemailer',
+        );
       }
 
       // convertir a base64url y enviar con Gmail API
@@ -146,7 +176,10 @@ export class MailerService {
       this.logger.log(`Email enviado a ${to} - id: ${messageId}`);
       return res;
     } catch (err: any) {
-      this.logger.error('Error enviando email con Gmail API', err?.message ?? err);
+      this.logger.error(
+        'Error enviando email con Gmail API',
+        err?.message ?? err,
+      );
       throw err;
     }
   }
@@ -174,5 +207,29 @@ export class MailerService {
       discount,
       year: new Date().getFullYear(),
     });
+  }
+
+  async sendPendingReminder(to: string, name: string) {
+    return this.sendTemplateMail(
+      to,
+      'Recordatorio de reserva pendiente',
+      'pending-reminder',
+      {
+        name,
+        year: new Date().getFullYear(),
+      },
+    );
+  }
+
+  async sendBookingCancelled(to: string, name: string) {
+    return this.sendTemplateMail(
+      to,
+      'Reserva cancelada por falta de pago',
+      'booking-cancelled',
+      {
+        name,
+        year: new Date().getFullYear(),
+      },
+    );
   }
 }
