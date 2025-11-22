@@ -1,98 +1,205 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 🚗 Volantia – Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Plataforma de alquiler de vehículos entre usuarios (peer‑to‑peer).  
+Backend desarrollado con **NestJS**, **Prisma**, **PostgreSQL**, **JWT**, **Cloudinary** y **Mercado Pago**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## 🧱 Tecnologías principales
+- NestJS 11
+- Prisma ORM
+- PostgreSQL
+- JWT Authentication
+- Cloudinary
+- Mercado Pago Checkout Pro
+- Swagger / OpenAPI
+- Railway Deploy
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+---
 
-## Project setup
-
-```bash
-$ npm install
+## 📦 Scripts disponibles
+```
+npm run start:dev
+npm run start
+npm run build
 ```
 
-## Compile and run the project
+---
 
-```bash
-# development
-$ npm run start
+## 📂 Estructura
+```
+src/
+├── application/
+│ ├── auth/ # Registro, login, JWT, guards
+│ ├── users/ # CRUD de usuarios y perfiles
+│ ├── admin/ # Funciones exclusivas de administradores
+│ ├── renter/ # Funciones exclusivas del propietario (RENTER)
+│ ├── standard-user/ # Funciones para usuarios comunes
+│ ├── pins/ # Vehículos (creación, fotos, filtrado, etc.)
+│ ├── reviews/ # Reseñas entre usuarios
+│ ├── bookings/ # Reservas de vehículos con fechas
+│ ├── payments/ # Mercado Pago (preferencias, webhook, redirect)
+│ ├── files/ # Subida de imágenes (Cloudinary)
+│ ├── mailer/ # Mails, plantillas HBS, notificaciones
+│ ├── cron/ # Tareas automáticas programadas
+│ └── common/ # Helpers, decoradores y utilidades compartidas
+│
+├── infra/
+│ ├── prisma/ # Schema, migraciones, seeders, PrismaClient
+│ └── cloudinary/ # Configuración y adaptador de Cloudinary
+│
+├── utils/ # Funciones generales de utilidad
+│
+├── app.module.ts # Módulo raíz
+├── app.controller.ts # Controlador principal
+├── app.service.ts # Servicio base
+└── main.ts # Punto de entrada de la aplicación
 
-# watch mode
-$ npm run start:dev
+---
 
-# production mode
-$ npm run start:prod
+## 🔐 Autenticación (JWT)
+
+### Signup
+`POST /auth/signup`
+
+### Signin
+`POST /auth/signin`
+
+### AuthGuard
+Usa:
+```
+Authorization: Bearer <token>
 ```
 
-## Run tests
+---
 
-```bash
-# unit tests
-$ npm run test
+## 🚗 Pins (Vehículos)
+- Crear vehículos (solo renter/admin)
+- Filtrado: categoría, ciudad, estado
+- Paginación
+- Fotos con Cloudinary
+- Seeder (`/pins/seeder`)
 
-# e2e tests
-$ npm run test:e2e
+---
 
-# test coverage
-$ npm run test:cov
+## 📸 Cloudinary
+- Subida de imágenes  
+- Manejo de portada  
+- Guardado en tabla `PinPhoto`
+
+---
+
+## 🛒 Bookings
+DTO:
+```
+userId: string;
+pinId: string;
+start_date: Date;
+end_date: Date;
 ```
 
-## Deployment
+---
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+## 💳 Mercado Pago
+Endpoints:
+```
+POST /payments
+POST /payments/webhook
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Incluye:
+- back_urls  
+- notifications  
+- external_reference  
 
-## Resources
+---
 
-Check out a few resources that may come in handy when working with NestJS:
+## 🌐 Variables de entorno
+```
+# -------------------------
+# 🔵 Base de datos
+# -------------------------
+DATABASE_URL=
+PORT=3000
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+# -------------------------
+# 🔐 JWT
+# -------------------------
+JWT_SECRET=
 
-## Support
+# -------------------------
+# ☁️ Cloudinary
+# -------------------------
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+# -------------------------
+# 🌐 CORS
+# -------------------------
+CORS_ORIGINS=
 
-## Stay in touch
+# -------------------------
+# 📩 Resend (Mailer)
+# -------------------------
+RESEND_API_KEY=
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+# -------------------------
+# 🔑 Auth0
+# -------------------------
+AUTH0_AUDIENCE=
+AUTH0_CLIENT_ID=
+AUTH0_BASE_URL=
+AUTH0_CLIENT_SECRET=
+AUTH0_SECRET=
 
-## License
+# -------------------------
+# 💳 Mercado Pago
+# -------------------------
+MP_PUBLIC_KEY=
+MP_ACCESS_TOKEN=
+MP_BACKEND_URL=
+FRONTEND_URL=
+MP_CURRENCY_ID=
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+# -------------------------
+# 📬 Mailer (Gmail OAuth)
+# -------------------------
+MAILER_CLIENT_ID=
+MAILER_CLIENT_SECRET=
+MAILER_REFRESH_TOKEN=
+MAILER_USER=
+
+---
+
+## 🧪 Swagger
+Disponible en `/api/docs`
+
+---
+
+## ▶️ Ejecutar proyecto
+```
+npm install
+npx prisma migrate dev
+npm run start:dev
+```
+
+---
+
+## 🚀 Deploy
+Railway + Prisma Migrate:
+```
+npx prisma migrate deploy
+```
+
+---
+
+## 👥 Autores
+Proyecto final Henry — Backend  
+Integrante:
+- Rafa Ibarra
+-
+-
+-
+-
+-
