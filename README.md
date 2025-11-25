@@ -198,8 +198,4 @@ npx prisma migrate deploy
 Proyecto final Henry — Backend  
 Integrante:
 - Rafa Ibarra
--
--
--
--
--
+- Fabián Romero
